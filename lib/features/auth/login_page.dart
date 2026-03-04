@@ -119,7 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                         }
 
                         final emailRegex =
-                        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$');
 
                         if (!emailRegex.hasMatch(value)) {
                           return "Format email tidak valid";
@@ -213,10 +213,14 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Login Berhasil (Validasi Lolos)"),
-                            ),
+                          String email = _emailController.text;
+                          String name = email.split('@')[0];
+
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.home,
+                                (route) => false,
+                            arguments: name,
                           );
                         }
                       },
