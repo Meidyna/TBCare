@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../core/session/user_session.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,8 +18,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final userName =
-        ModalRoute.of(context)?.settings.arguments as String? ?? "User";
+    final userName = UserSession.nama;
 
     return Scaffold(
       backgroundColor: AppTheme.mainBackground,
@@ -271,13 +271,17 @@ class _HomePageState extends State<HomePage> {
               "assets/icons/location.png",
               "Layanan Kesehatan",
               AppTheme.buttonBackground,
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, AppRoutes.layananKesehatan);
+                  },
             ),
             _quickButton(
               "assets/icons/book.png",
               "Konten Edukasi",
               const Color(0xFFFF7800),
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, AppRoutes.kontenEdukasi);
+                  },
             ),
           ],
         )

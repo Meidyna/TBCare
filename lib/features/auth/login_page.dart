@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../core/session/user_session.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -216,11 +217,12 @@ class _LoginPageState extends State<LoginPage> {
                           String email = _emailController.text;
                           String name = email.split('@')[0];
 
+                          UserSession.simpan(nama: name);
+
                           Navigator.pushNamedAndRemoveUntil(
                             context,
                             AppRoutes.home,
                                 (route) => false,
-                            arguments: name,
                           );
                         }
                       },

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../auth/login_page.dart';
 import '../../core/navigation/app_routes.dart';
 
 class SplashPage extends StatefulWidget {

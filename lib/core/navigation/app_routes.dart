@@ -5,4 +5,6 @@ class AppRoutes {
   static const register = '/register';
   static const home = '/home';
   static const jadwal = '/jadwal';
+  static const layananKesehatan = '/layanan-kesehatan';
+  static const kontenEdukasi = '/konten-edukasi';
 }

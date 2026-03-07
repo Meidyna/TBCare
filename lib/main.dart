@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:tbcare/features/home/home_page.dart';
+import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
 import 'package:tbcare/features/jadwal/jadwal_page.dart';
+import 'package:tbcare/features/layanan/layanan_kesehatan_page.dart';
 import 'features/splash/splash_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_routes.dart';
-import 'features/splash/splash_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/auth/forgot_password_page.dart';
 import 'features/auth/register_page.dart';
@@ -30,6 +30,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.register: (context) => const RegisterPage(),
         AppRoutes.home: (context) => const MainNavigation(),
         AppRoutes.jadwal: (context) => const JadwalPage(),
+        AppRoutes.layananKesehatan: (context) => const LayananKesehatanPage(),
+        AppRoutes.kontenEdukasi: (context) => const KontenEdukasiPage(),
       },
     );
   }
