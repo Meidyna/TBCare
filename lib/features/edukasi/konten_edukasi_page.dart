@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 
 // ════════════════════════════════════════════════════════════════
@@ -9,7 +10,7 @@ class KontenEdukasiModel {
   final String judul;
   final String deskripsi;
   final String tipe; // "Artikel" | "Video"
-  final String? thumbnailUrl; // URL gambar dari API
+  final String? thumbnailUrl;
 
   const KontenEdukasiModel({
     required this.id,
@@ -25,7 +26,7 @@ class KontenEdukasiModel {
 //     id: json['id'].toString(),
 //     judul: json['judul'],
 //     deskripsi: json['deskripsi'],
-//     tipe: json['tipe'], // "Artikel" atau "Video"
+//     tipe: json['tipe'],
 //     thumbnailUrl: json['thumbnail_url'],
 //   );
 // }
@@ -43,22 +44,19 @@ class KontenEdukasiPage extends StatefulWidget {
 
 class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
 
-  // ── State ────────────────────────────────────────────────────
   List<KontenEdukasiModel> _semuaKonten = [];
   List<KontenEdukasiModel> _kontenTerfilter = [];
   bool _isLoading = false;
 
-  /// Tab aktif: "Semua" | "Video" | "Artikel"
   String _tabAktif = "Semua";
   final List<String> _tabs = ["Semua", "Video", "Artikel"];
 
-  // ── Data dummy ───────────────────────────────────────────────
   // TODO: Hapus data dummy ini saat API sudah tersedia
   final List<KontenEdukasiModel> _dataDummy = const [
     KontenEdukasiModel(
       id: '1',
       judul: 'Mengenal Tuberkulosis',
-      deskripsi: 'Penjelasan lengkap tentang apa itu TBC, penyebabs dan cara penularannya',
+      deskripsi: 'Penjelasan lengkap tentang apa itu TBC, penyebab dan cara penularannya',
       tipe: 'Artikel',
     ),
     KontenEdukasiModel(
@@ -70,7 +68,7 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     KontenEdukasiModel(
       id: '3',
       judul: 'Mitos dan Fakta Seputar TBC',
-      deskripsi: 'Memahami apa saja yang termasuk mitos dan apa saja yang termasuk fakta pada TBC',
+      deskripsi: 'Memahami apa saja yang termasuk mitos dan fakta pada TBC',
       tipe: 'Artikel',
     ),
     KontenEdukasiModel(
@@ -87,23 +85,16 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     ),
   ];
 
-  // ── Lifecycle ────────────────────────────────────────────────
-
   @override
   void initState() {
     super.initState();
     _loadKonten();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
-
-  /// Load konten dari API
   Future<void> _loadKonten() async {
     setState(() => _isLoading = true);
 
-    // TODO: Ganti dengan pemanggilan API, contoh:
+    // TODO: Ganti dengan pemanggilan API:
     // try {
     //   final response = await ApiService.getKontenEdukasi();
     //   setState(() {
@@ -119,7 +110,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     // }
 
     // Sementara pakai data dummy
-    // TODO: Hapus baris ini saat API sudah tersedia
     await Future.delayed(const Duration(milliseconds: 300));
     setState(() {
       _semuaKonten = _dataDummy;
@@ -128,16 +118,11 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     _filterKonten();
   }
 
-  /// Filter konten berdasarkan tab aktif
   void _filterKonten() {
     setState(() {
-      if (_tabAktif == "Semua") {
-        _kontenTerfilter = _semuaKonten;
-      } else {
-        _kontenTerfilter = _semuaKonten
-            .where((k) => k.tipe == _tabAktif)
-            .toList();
-      }
+      _kontenTerfilter = _tabAktif == "Semua"
+          ? _semuaKonten
+          : _semuaKonten.where((k) => k.tipe == _tabAktif).toList();
     });
   }
 
@@ -146,9 +131,15 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     _filterKonten();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
+  void _bukaDetail(KontenEdukasiModel konten) {
+    Navigator.pushNamed(
+      context,
+      konten.tipe == 'Video'
+          ? AppRoutes.detailVideo
+          : AppRoutes.detailArtikel,
+      arguments: konten,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,9 +150,7 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
 
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
-    // Tab bar overlap ke header (setengah di dalam, setengah di luar)
     final double tabTopOffset = headerTotal - 24.0;
-    // Tinggi tab bar ~48, separuh bawah = 24, + gap
     const double listPaddingTop = 28.0 + 40.0;
 
     return Scaffold(
@@ -169,13 +158,11 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
       body: Stack(
         children: [
 
-          /// ── HEADER ───────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ────────────────────────────────────
           Positioned(
             top: tabTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -196,7 +183,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
             ),
           ),
 
-          /// ── TAB BAR MENGAMBANG ────────────────────────────────
           Positioned(
             top: tabTopOffset,
             left: width * 0.05,
@@ -207,10 +193,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -287,7 +269,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            // Tab aktif pakai warna hijau, tidak aktif transparan
             color: isAktif ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
@@ -296,10 +277,8 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              fontWeight:
-              isAktif ? FontWeight.bold : FontWeight.normal,
-              // Tab aktif teks putih, tidak aktif abu-abu
-              color: isAktif ? Colors.black54 : Colors.black54,
+              fontWeight: isAktif ? FontWeight.bold : FontWeight.normal,
+              color: isAktif ? AppTheme.buttonBackground : Colors.black54,
             ),
           ),
         ),
@@ -307,7 +286,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     );
   }
 
-  /// Tampilan saat tidak ada konten
   Widget _buildEmpty() {
     return Container(
       width: double.infinity,
@@ -333,78 +311,80 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     );
   }
 
-  /// Kartu satu konten edukasi
+  /// Kartu konten — bisa ditekan → navigate ke detail
   Widget _buildKartuKonten(double width, KontenEdukasiModel konten) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(width * 0.04),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-
-          // ── Thumbnail / placeholder ─────────────────────
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: konten.thumbnailUrl != null
-            // Saat API ada, tampilkan gambar dari URL
-                ? Image.network(
-              konten.thumbnailUrl!,
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _placeholderThumbnail(konten.tipe),
-            )
-            // Sementara pakai placeholder
-                : _placeholderThumbnail(konten.tipe),
-          ),
-
-          const SizedBox(width: 12),
-
-          // ── Judul & deskripsi ───────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  konten.judul,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  konten.deskripsi,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () => _bukaDetail(konten), // ← navigate ke detail
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(width * 0.04),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+
+            // Thumbnail / placeholder
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: konten.thumbnailUrl != null
+                  ? Image.network(
+                konten.thumbnailUrl!,
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _placeholderThumbnail(konten.tipe),
+              )
+                  : _placeholderThumbnail(konten.tipe),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    konten.judul,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    konten.deskripsi,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade500,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Ikon panah kanan
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.grey.shade400, size: 20),
+          ],
+        ),
       ),
     );
   }
 
-  /// Placeholder thumbnail saat gambar belum ada dari API
   Widget _placeholderThumbnail(String tipe) {
     final bool isVideo = tipe == 'Video';
     return Container(
@@ -415,7 +395,9 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
-        isVideo ? Icons.play_circle_outline_rounded : Icons.article_outlined,
+        isVideo
+            ? Icons.play_circle_outline_rounded
+            : Icons.article_outlined,
         color: AppTheme.buttonBackground,
         size: 28,
       ),

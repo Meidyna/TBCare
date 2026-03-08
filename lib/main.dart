@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tbcare/features/edukasi/detail_artikel_page.dart';
+import 'package:tbcare/features/edukasi/detail_video_page.dart';
 import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
 import 'package:tbcare/features/jadwal/jadwal_page.dart';
 import 'package:tbcare/features/layanan/layanan_kesehatan_page.dart';
@@ -32,6 +34,12 @@ class MyApp extends StatelessWidget {
         AppRoutes.jadwal: (context) => const JadwalPage(),
         AppRoutes.layananKesehatan: (context) => const LayananKesehatanPage(),
         AppRoutes.kontenEdukasi: (context) => const KontenEdukasiPage(),
+        AppRoutes.detailArtikel: (context) => DetailArtikelPage(
+          konten: ModalRoute.of(context)!.settings.arguments as KontenEdukasiModel,
+        ),
+        AppRoutes.detailVideo: (context) => DetailVideoPage(
+          konten: ModalRoute.of(context)!.settings.arguments as KontenEdukasiModel,
+        ),
       },
     );
   }

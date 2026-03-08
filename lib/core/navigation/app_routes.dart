@@ -7,4 +7,6 @@ class AppRoutes {
   static const jadwal = '/jadwal';
   static const layananKesehatan = '/layanan-kesehatan';
   static const kontenEdukasi = '/konten-edukasi';
+  static const detailArtikel = '/detail-artikel';
+  static const detailVideo = '/detail-video';
 }
