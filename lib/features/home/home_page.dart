@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
 
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppTheme.buttonBackground,
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.chatbot),
         child: Image.asset(
     "assets/icons/chatbot.png",
     width: 24,

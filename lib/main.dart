@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tbcare/features/chatbot/chatbot_page.dart';
 import 'package:tbcare/features/edukasi/detail_artikel_page.dart';
 import 'package:tbcare/features/edukasi/detail_video_page.dart';
 import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.detailVideo: (context) => DetailVideoPage(
           konten: ModalRoute.of(context)!.settings.arguments as KontenEdukasiModel,
         ),
+        AppRoutes.chatbot: (context) => const ChatbotPage(), // ← tambah
       },
     );
   }
