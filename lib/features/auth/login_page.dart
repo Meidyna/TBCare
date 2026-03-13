@@ -217,7 +217,11 @@ class _LoginPageState extends State<LoginPage> {
                           String email = _emailController.text;
                           String name = email.split('@')[0];
 
-                          UserSession.simpan(nama: name);
+                          UserSession.simpan(
+                            nama: name,   // atau dari response API
+                            email: email,
+                            telepon: '081234567890',
+                          );
 
                           Navigator.pushNamedAndRemoveUntil(
                             context,

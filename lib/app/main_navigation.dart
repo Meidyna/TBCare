@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../features/home/home_page.dart';
 import '../features/jadwal/jadwal_page.dart';
-//import '../features/profile/profile_page.dart';
+import '../features/profil/profil_page.dart';
 import '../../core/widgets/custom_bottom_nav.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -17,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = const [
     HomePage(),
     JadwalPage(),
-    //ProfilePage(),
+    ProfilPage(),
   ];
 
   @override

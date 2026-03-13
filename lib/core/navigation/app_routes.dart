@@ -9,5 +9,7 @@ class AppRoutes {
   static const kontenEdukasi = '/konten-edukasi';
   static const detailArtikel = '/detail-artikel';
   static const detailVideo = '/detail-video';
-  static const chatbot = '/chatbot'; // ← tambah
+  static const chatbot = '/chatbot';
+  static const profil = '/profil';
+  static const editProfil = '/edit-profil';
 }

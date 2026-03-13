@@ -12,6 +12,8 @@ import 'features/auth/login_page.dart';
 import 'features/auth/forgot_password_page.dart';
 import 'features/auth/register_page.dart';
 import 'app/main_navigation.dart';
+import 'features/profil/profil_page.dart';
+import 'features/edit_profil/edit_profil_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,6 +35,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.register: (context) => const RegisterPage(),
         AppRoutes.home: (context) => const MainNavigation(),
         AppRoutes.jadwal: (context) => const JadwalPage(),
+        AppRoutes.profil: (context) => const ProfilPage(),
         AppRoutes.layananKesehatan: (context) => const LayananKesehatanPage(),
         AppRoutes.kontenEdukasi: (context) => const KontenEdukasiPage(),
         AppRoutes.detailArtikel: (context) => DetailArtikelPage(
@@ -41,7 +44,8 @@ class MyApp extends StatelessWidget {
         AppRoutes.detailVideo: (context) => DetailVideoPage(
           konten: ModalRoute.of(context)!.settings.arguments as KontenEdukasiModel,
         ),
-        AppRoutes.chatbot: (context) => const ChatbotPage(), // ← tambah
+        AppRoutes.chatbot: (context) => const ChatbotPage(),
+        AppRoutes.editProfil: (context) => const EditProfilPage(),
       },
     );
   }

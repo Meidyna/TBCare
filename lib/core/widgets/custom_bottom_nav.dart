@@ -12,22 +12,6 @@ class CustomBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  void _onItemTapped(BuildContext context, int index) {
-
-    if (index == currentIndex) return;
-
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, AppRoutes.home);
-        break;
-      case 1:
-        Navigator.pushNamed(context, AppRoutes.jadwal);
-        break;
-      case 2:
-        //Navigator.pushNamed(context, AppRoutes.profile);
-        break;
-    }
-  }
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
