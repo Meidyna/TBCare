@@ -13,6 +13,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  int _rebuildHome = 0;
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -22,6 +23,11 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      HomePage(key: ValueKey(_rebuildHome)), // ← pakai ValueKey
+      const JadwalPage(),
+      const ProfilPage(),
+    ];
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -31,6 +37,7 @@ class _MainNavigationState extends State<MainNavigation> {
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
+            if (index == 0) _rebuildHome++;
             _currentIndex = index;
           });
         },

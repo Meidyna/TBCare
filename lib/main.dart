@@ -14,6 +14,13 @@ import 'features/auth/register_page.dart';
 import 'app/main_navigation.dart';
 import 'features/profil/profil_page.dart';
 import 'features/edit_profil/edit_profil_page.dart';
+import 'features/notifikasi/notifikasi_page.dart';
+import 'features/skrining/skrining_page.dart';
+import 'features/skrining/hasil_skrining_page.dart';
+import 'features/pengaturan/pengaturan_page.dart';
+import 'features/pengaturan/ubah_kata_sandi_page.dart';
+import 'features/pengaturan/tentang_aplikasi_page.dart';
+import 'features/pengaturan/panduan_pengguna_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,6 +53,13 @@ class MyApp extends StatelessWidget {
         ),
         AppRoutes.chatbot: (context) => const ChatbotPage(),
         AppRoutes.editProfil: (context) => const EditProfilPage(),
+        AppRoutes.notifikasi: (context) => const NotifikasiPage(),
+        AppRoutes.skrining:      (context) => const SkriningPage(),
+        AppRoutes.hasilSkrining: (context) => const HasilSkriningPage(),
+        AppRoutes.pengaturan: (context) => const PengaturanPage(),
+        AppRoutes.ubahKataSandi: (context) => const UbahKataSandiPage(),
+        AppRoutes.tentangAplikasi: (context) => const TentangAplikasiPage(),
+        AppRoutes.panduanPengguna: (context) => const PanduanPenggunaPage(),
       },
     );
   }

@@ -88,11 +88,7 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   void _pengaturan() {
-    // TODO: Navigate ke halaman pengaturan
-    // Navigator.pushNamed(context, AppRoutes.pengaturan);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur pengaturan segera hadir')),
-    );
+    Navigator.pushNamed(context, AppRoutes.pengaturan);
   }
 
   void _keluar() {

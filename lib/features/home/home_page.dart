@@ -61,7 +61,9 @@ class _HomePageState extends State<HomePage> {
         children: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.notifikasi);
+              },
           ),
           if (hasNotification)
             Positioned(
@@ -257,14 +259,16 @@ class _HomePageState extends State<HomePage> {
               "assets/icons/stethoscope.png",
               "Skrining Mandiri",
               AppTheme.buttonBackground,
-                  () {},
+                  () {
+                    Navigator.pushNamed(context, AppRoutes.skrining);
+                  },
             ),
             _quickButton(
               "assets/icons/calendar.png",
               "Jadwal \n Obat",
               const Color(0xFFFF7800),
                   () {
-                Navigator.pushNamed(context, AppRoutes.jadwal);
+                    Navigator.pushNamed(context, AppRoutes.jadwal);
               },
             ),
             _quickButton(
