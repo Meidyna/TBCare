@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/session/user_session.dart';
+import '../../repositories/profil_repository.dart';
 
-// ════════════════════════════════════════════════════════════════
-// EDIT PROFIL PAGE
-// ════════════════════════════════════════════════════════════════
 class EditProfilPage extends StatefulWidget {
   const EditProfilPage({super.key});
 
@@ -16,20 +14,17 @@ class EditProfilPage extends StatefulWidget {
 
 class _EditProfilPageState extends State<EditProfilPage> {
 
-  // ── Controllers ──────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _namaController;
   late final TextEditingController _emailController;
   late final TextEditingController _teleponController;
 
-  // ── State ────────────────────────────────────────────────────
-  File? _fotoBaru;        // foto yang dipilih dari galeri
+  File? _fotoBaru;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    // Isi field dengan data yang sudah ada
     _namaController   = TextEditingController(text: UserSession.nama);
     _emailController  = TextEditingController(text: UserSession.email);
     _teleponController = TextEditingController(text: UserSession.telepon);
@@ -43,11 +38,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     super.dispose();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
-
-  /// Pilih foto dari galeri
   Future<void> _pilihFoto() async {
     final picker = ImagePicker();
     final XFile? hasil = await picker.pickImage(
@@ -61,50 +51,35 @@ class _EditProfilPageState extends State<EditProfilPage> {
     }
   }
 
-  /// Simpan perubahan profil
+  // ← Fungsi simpan yang benar, langsung panggil API
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
-
-    // TODO: Ganti dengan pemanggilan API:
-    // try {
-    //   await ApiService.updateProfil(
-    //     nama: _namaController.text.trim(),
-    //     email: _emailController.text.trim(),
-    //     telepon: _teleponController.text.trim(),
-    //     foto: _fotoBaru, // kirim sebagai multipart jika ada
-    //   );
-    // } catch (e) {
-    //   setState(() => _isSaving = false);
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('Gagal menyimpan. Coba lagi.')),
-    //   );
-    //   return;
-    // }
-
-    // Sementara update UserSession lokal
-    // TODO: Hapus simulasi ini saat API tersedia
-    await Future.delayed(const Duration(milliseconds: 400));
-    UserSession.simpan(
-      nama: _namaController.text.trim(),
-      email: _emailController.text.trim(),
-      telepon: _teleponController.text.trim(),
-    );
-
-    setState(() => _isSaving = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berhasil diperbarui')),
+    try {
+      await ProfilRepository.updateProfile(
+        nama: _namaController.text.trim(),
+        email: _emailController.text.trim(),
+        telepon: _teleponController.text.trim(),
       );
-      Navigator.pop(context, true); // true = ada perubahan, ProfilPage reload
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil berhasil diperbarui')),
+        );
+        Navigator.pop(context, true); // ← kirim true ke ProfilPage
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isSaving = false);
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -121,20 +96,15 @@ class _EditProfilPageState extends State<EditProfilPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
-
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                  width * 0.05, 0, width * 0.05, 32),
+              padding: EdgeInsets.fromLTRB(width * 0.05, 0, width * 0.05, 32),
               child: _buildCardForm(width),
             ),
           ),
@@ -142,10 +112,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -188,7 +154,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
-  /// Card utama berisi avatar + form
   Widget _buildCardForm(double width) {
     return Container(
       width: double.infinity,
@@ -210,12 +175,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── Avatar + tombol ganti foto ──────────────────
             Center(child: _buildAvatar(width)),
-
             SizedBox(height: width * 0.06),
 
-            // ── Field Nama ──────────────────────────────────
             _label('Nama Lengkap'),
             const SizedBox(height: 6),
             _fieldDenganIcon(
@@ -232,7 +194,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
             SizedBox(height: width * 0.04),
 
-            // ── Field Email ─────────────────────────────────
             _label('Email'),
             const SizedBox(height: 6),
             _fieldDenganIcon(
@@ -242,9 +203,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                 hint: 'Masukkan email',
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Email tidak boleh kosong';
-                  }
+                  if (v == null || v.trim().isEmpty) return 'Email tidak boleh kosong';
                   if (!v.contains('@')) return 'Format email tidak valid';
                   return null;
                 },
@@ -253,7 +212,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
             SizedBox(height: width * 0.04),
 
-            // ── Field Telepon ───────────────────────────────
             _label('Nomor Telepon'),
             const SizedBox(height: 6),
             _fieldDenganIcon(
@@ -270,7 +228,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
             SizedBox(height: width * 0.06),
 
-            // ── Tombol Batal ────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
@@ -291,7 +248,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
 
             const SizedBox(height: 10),
 
-            // ── Tombol Simpan ───────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -315,8 +271,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                   ),
                 )
                     : const Text('Simpan',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
           ],
@@ -325,13 +280,11 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
-  /// Avatar dengan badge edit di pojok kanan bawah
   Widget _buildAvatar(double width) {
     return GestureDetector(
       onTap: _pilihFoto,
       child: Stack(
         children: [
-          // Foto atau placeholder
           Container(
             width: 88,
             height: 88,
@@ -344,24 +297,11 @@ class _EditProfilPageState extends State<EditProfilPage> {
                 fit: BoxFit.cover,
               )
                   : null,
-              // TODO: saat API tersedia, tampilkan foto dari URL:
-              // image: profilFotoUrl != null
-              //     ? DecorationImage(
-              //         image: NetworkImage(profilFotoUrl!),
-              //         fit: BoxFit.cover,
-              //       )
-              //     : null,
             ),
             child: _fotoBaru == null
-                ? const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 48,
-            )
+                ? const Icon(Icons.person_rounded, color: Colors.white, size: 48)
                 : null,
           ),
-
-          // Badge edit oranye
           Positioned(
             bottom: 2,
             right: 2,
@@ -372,11 +312,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
                 color: Color(0xFFE8824A),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.edit_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
+              child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
             ),
           ),
         ],
@@ -384,20 +320,14 @@ class _EditProfilPageState extends State<EditProfilPage> {
     );
   }
 
-  /// Icon di luar kotak, field input di sampingnya
-  Widget _fieldDenganIcon({
-    required IconData icon,
-    required Widget child,
-  }) {
+  Widget _fieldDenganIcon({required IconData icon, required Widget child}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Icon di luar, sejajar dengan tengah field
         Padding(
           padding: const EdgeInsets.only(top: 12, right: 10),
           child: Icon(icon, color: Colors.grey.shade500, size: 20),
         ),
-        // Field input mengisi sisa lebar
         Expanded(child: child),
       ],
     );
@@ -430,8 +360,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -442,8 +371,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide:
-          const BorderSide(color: AppTheme.buttonBackground, width: 2),
+          borderSide: const BorderSide(color: AppTheme.buttonBackground, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

@@ -1,31 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
-import 'hasil_skrining_page.dart';
-
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
-class PertanyaanModel {
-  final String id;
-  final String pertanyaan;
-  final List<String> pilihan;
-
-  const PertanyaanModel({
-    required this.id,
-    required this.pertanyaan,
-    required this.pilihan,
-  });
-
-// TODO: Uncomment saat API tersedia
-// factory PertanyaanModel.fromJson(Map<String, dynamic> json) {
-//   return PertanyaanModel(
-//     id: json['id'].toString(),
-//     pertanyaan: json['pertanyaan'],
-//     pilihan: List<String>.from(json['pilihan']),
-//   );
-// }
-}
+import '../../repositories/skrining_repository.dart';
+import '../../models/skrining_model.dart';
 
 // ════════════════════════════════════════════════════════════════
 // SKRINING PAGE
@@ -43,72 +20,42 @@ class _SkriningPageState extends State<SkriningPage> {
   int _indexSaat = 0;
   String? _jawabanDipilih;
   bool _isLoading = false;
+  List<PertanyaanModel> _pertanyaan = [];
 
   /// Menyimpan semua jawaban: { id_pertanyaan: jawaban }
   final Map<String, String> _jawaban = {};
 
-  // ── Data pertanyaan dummy ────────────────────────────────────
-  // TODO: Ganti dengan data dari API saat tersedia
-  // TODO: Sesuaikan pertanyaan dengan yang dikirim teman Anda
-  final List<PertanyaanModel> _pertanyaan = const [
-    PertanyaanModel(
-      id: '1',
-      pertanyaan: 'Apakah Anda mengalami batuk selama lebih dari 2 minggu?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-    PertanyaanModel(
-      id: '2',
-      pertanyaan: 'Apakah Anda mengalami batuk berdarah?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-    PertanyaanModel(
-      id: '3',
-      pertanyaan: 'Apakah Anda mengalami demam yang tidak kunjung sembuh?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-    PertanyaanModel(
-      id: '4',
-      pertanyaan: 'Apakah Anda mengalami penurunan berat badan tanpa sebab?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-    PertanyaanModel(
-      id: '5',
-      pertanyaan: 'Apakah Anda sering berkeringat di malam hari?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-    PertanyaanModel(
-      id: '6',
-      pertanyaan: 'Apakah Anda pernah kontak erat dengan penderita TBC?',
-      pilihan: ['Ya', 'Tidak'],
-    ),
-  ];
+  // ── Init ─────────────────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    _loadPertanyaan();
+  }
 
   // ── Getters ──────────────────────────────────────────────────
   int get _totalPertanyaan => _pertanyaan.length;
   PertanyaanModel get _pertanyaanSaat => _pertanyaan[_indexSaat];
-  double get _progress => (_indexSaat + 1) / _totalPertanyaan;
+  double get _progress => _pertanyaan.isEmpty ? 0 : (_indexSaat + 1) / _totalPertanyaan;
 
   // ════════════════════════════════════════════════════════════
   // FUNGSI
   // ════════════════════════════════════════════════════════════
 
-  /// Load pertanyaan dari API
-  // TODO: Uncomment dan implementasi saat API tersedia
-  // Future<void> _loadPertanyaan() async {
-  //   setState(() => _isLoading = true);
-  //   try {
-  //     final response = await ApiService.getPertanyaanSkrining();
-  //     setState(() {
-  //       _pertanyaan = (response as List)
-  //           .map((e) => PertanyaanModel.fromJson(e))
-  //           .toList();
-  //     });
-  //   } catch (e) {
-  //     // handle error
-  //   } finally {
-  //     setState(() => _isLoading = false);
-  //   }
-  // }
+  Future<void> _loadPertanyaan() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await SkriningRepository.getPertanyaan();
+      setState(() => _pertanyaan = data);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat pertanyaan: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   void _pilihJawaban(String jawaban) {
     setState(() => _jawabanDipilih = jawaban);
@@ -132,47 +79,26 @@ class _SkriningPageState extends State<SkriningPage> {
     }
   }
 
-  /// Hitung dan kirim hasil skrining
   Future<void> _kirimHasil() async {
     setState(() => _isLoading = true);
+    try {
+      final hasil = await SkriningRepository.postJawaban(_jawaban);
 
-    // TODO: Ganti dengan pemanggilan API saat tersedia:
-    // try {
-    //   final response = await ApiService.kirimHasilSkrining(_jawaban);
-    //   final tingkatRisiko = response['tingkat_risiko']; // "tinggi"/"sedang"/"rendah"
-    //   Navigator.pushReplacementNamed(
-    //     context,
-    //     AppRoutes.hasilSkrining,
-    //     arguments: tingkatRisiko,
-    //   );
-    // } catch (e) {
-    //   // handle error
-    // } finally {
-    //   setState(() => _isLoading = false);
-    // }
-
-    // Sementara hitung risiko secara lokal berdasarkan jumlah jawaban "Ya"
-    // TODO: Hapus logika ini saat API tersedia
-    await Future.delayed(const Duration(milliseconds: 400));
-    final jumlahYa = _jawaban.values.where((v) => v == 'Ya').length;
-
-    String tingkatRisiko;
-    if (jumlahYa >= 4) {
-      tingkatRisiko = 'tinggi';
-    } else if (jumlahYa >= 2) {
-      tingkatRisiko = 'sedang';
-    } else {
-      tingkatRisiko = 'rendah';
-    }
-
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.hasilSkrining,
-        arguments: tingkatRisiko,
-      );
+      if (mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.hasilSkrining,
+          arguments: hasil, // kirim HasilSkriningModel ke halaman hasil
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengirim jawaban: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -195,9 +121,10 @@ class _SkriningPageState extends State<SkriningPage> {
       backgroundColor: AppTheme.mainBackground,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _pertanyaan.isEmpty
+          ? const Center(child: Text('Tidak ada pertanyaan'))
           : Stack(
         children: [
-
           /// ── HEADER ───────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
@@ -213,12 +140,8 @@ class _SkriningPageState extends State<SkriningPage> {
                   width * 0.05, 0, width * 0.05, 24),
               child: Column(
                 children: [
-                  // Card pertanyaan mengambang
                   _buildCardPertanyaan(width),
-
                   const SizedBox(height: 16),
-
-                  // Info privasi
                   _buildInfoPrivasi(width),
                 ],
               ),
@@ -279,7 +202,6 @@ class _SkriningPageState extends State<SkriningPage> {
     );
   }
 
-  /// Card utama: progress + pertanyaan + pilihan + tombol
   Widget _buildCardPertanyaan(double width) {
     return Container(
       width: double.infinity,
@@ -334,10 +256,9 @@ class _SkriningPageState extends State<SkriningPage> {
 
           const SizedBox(height: 20),
 
-          // ── Pilihan jawaban ──────────────────────────────
-          ..._pertanyaanSaat.pilihan.map(
-                (pilihan) => _buildPilihan(pilihan, width),
-          ),
+          // ── Pilihan jawaban (Ya / Tidak) ─────────────────
+          _buildPilihan('Ya', width),
+          _buildPilihan('Tidak', width),
 
           const SizedBox(height: 20),
 
@@ -370,7 +291,6 @@ class _SkriningPageState extends State<SkriningPage> {
     );
   }
 
-  /// Satu opsi jawaban
   Widget _buildPilihan(String pilihan, double width) {
     final dipilih = _jawabanDipilih == pilihan;
     return GestureDetector(
@@ -397,15 +317,13 @@ class _SkriningPageState extends State<SkriningPage> {
           style: TextStyle(
             fontSize: 14,
             color: dipilih ? AppTheme.buttonBackground : Colors.black87,
-            fontWeight:
-            dipilih ? FontWeight.w600 : FontWeight.normal,
+            fontWeight: dipilih ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ),
     );
   }
 
-  /// Info privasi di bawah card
   Widget _buildInfoPrivasi(double width) {
     return Container(
       width: double.infinity,

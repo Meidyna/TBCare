@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/api_services.dart';
 
 // ════════════════════════════════════════════════════════════════
 // UBAH KATA SANDI PAGE
@@ -41,37 +43,29 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
+    try {
+      await ApiService.put(ApiConstants.changePassword, {
+        "password_lama": _sandiLamaController.text,
+        "password_baru": _sandiBaruController.text,
+      });
 
-    // TODO: Ganti dengan pemanggilan API saat tersedia:
-    // try {
-    //   await ApiService.ubahKataSandi(
-    //     sandiLama: _sandiLamaController.text,
-    //     sandiBaru: _sandiBaruController.text,
-    //   );
-    //   if (mounted) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(content: Text('Kata sandi berhasil diubah')),
-    //     );
-    //     Navigator.pop(context);
-    //   }
-    // } catch (e) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('Gagal mengubah kata sandi. Coba lagi.')),
-    //   );
-    // } finally {
-    //   setState(() => _isSaving = false);
-    // }
-
-    // Sementara simulasi loading
-    // TODO: Hapus simulasi ini saat API tersedia
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _isSaving = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Fitur ini akan tersedia setelah server terhubung')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kata sandi berhasil diubah')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password lama tidak sesuai'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isSaving = false);
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:tbcare/core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../repositories/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -168,25 +169,50 @@ class _RegisterPageState extends State<RegisterPage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              setState(() {
-                                _isLoading = true;
-                              });
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                setState(() {
+                                  _isLoading = true;
+                                });
 
-                              // Simulasi request API 2 detik
-                              await Future.delayed(const Duration(seconds: 2));
+                                try {
+                                  final result = await AuthRepository.register(
+                                    name: _nameController.text,
+                                    email: _emailController.text,
+                                    phone: _phoneController.text,
+                                    password: _passwordController.text,
+                                  );
 
-                              setState(() {
-                                _isLoading = false;
-                              });
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
 
-                              Navigator.pushReplacementNamed(
-                                context,
-                                AppRoutes.login,
-                              );
-                            }
-                          },
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Register berhasil"),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    AppRoutes.login,
+                                  );
+
+                                } catch (e) {
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
 
                           child: _isLoading
                               ? const CircularProgressIndicator(color: Colors.white)

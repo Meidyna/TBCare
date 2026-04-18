@@ -13,31 +13,27 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
-  int _rebuildHome = 0;
-
-  final List<Widget> _pages = const [
-    HomePage(),
-    JadwalPage(),
-    ProfilPage(),
-  ];
+  int _rebuildHome = 0; // ← counter untuk force rebuild HomePage
 
   @override
   Widget build(BuildContext context) {
+    // ← Satu list saja, pakai ValueKey agar HomePage rebuild saat tab ditekan
     final List<Widget> pages = [
-      HomePage(key: ValueKey(_rebuildHome)), // ← pakai ValueKey
+      HomePage(key: ValueKey(_rebuildHome)),
       const JadwalPage(),
       const ProfilPage(),
     ];
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: pages, // ← pakai pages yang benar
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
-            if (index == 0) _rebuildHome++;
+            if (index == 0) _rebuildHome++; // ← increment saat tab home ditekan
             _currentIndex = index;
           });
         },

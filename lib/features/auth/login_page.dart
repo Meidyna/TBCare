@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/constants/api_constants.dart';
+import '../../core/session/user_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
-import '../../core/session/user_session.dart';
+import '../../services/api_services.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -212,22 +215,45 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (_formKey.currentState!.validate()) {
-                          String email = _emailController.text;
-                          String name = email.split('@')[0];
+                          try {
+                            final response = await ApiService.post(
+                              ApiConstants.login,
+                              {
+                                "email": _emailController.text.trim(),
+                                "password": _passwordController.text.trim(),
+                              },
+                            );
 
-                          UserSession.simpan(
-                            nama: name,   // atau dari response API
-                            email: email,
-                            telepon: '081234567890',
-                          );
+                            final token = response['data']['token'];
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('token', token);
+                            final profileResponse = await ApiService.get(ApiConstants.getProfile);
+                            final profileData = profileResponse['data'];
 
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            AppRoutes.home,
-                                (route) => false,
-                          );
+                            UserSession.simpan(
+                              nama: profileData['nama_lengkap'] ?? '',
+                              email: profileData['email'] ?? '',
+                              telepon: profileData['no_telepon'] ?? '',
+                              token: token,
+                            );
+
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.home,
+                                  (route) => false,
+                            );
+
+                          } catch (e) {
+                            print(e);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Email atau password salah"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text(

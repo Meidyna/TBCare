@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../repositories/chatbot_repository.dart';
 
 // ════════════════════════════════════════════════════════════════
 // MODEL
@@ -97,7 +98,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
     _scrollKeBawah();
 
-    // Tampilkan bubble "sedang mengetik"
     setState(() {
       _pesanList.add(PesanModel(
         isi: '',
@@ -108,36 +108,22 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
     _scrollKeBawah();
 
-    // ── TODO: Ganti dengan pemanggilan API ──────────────────
-    // Contoh integrasi saat API tersedia:
-    //
-    // try {
-    //   final response = await ApiService.kirimPesanChatbot(
-    //     pesan: teks,
-    //     // Kirim riwayat chat jika API mendukung konteks percakapan:
-    //     // riwayat: _pesanList.where((p) => !p.isLoading).map((p) => {
-    //     //   'role': p.pengirim == PengirimPesan.user ? 'user' : 'assistant',
-    //     //   'content': p.isi,
-    //     // }).toList(),
-    //   );
-    //   _gantiBubbleLoading(response['jawaban']);
-    // } catch (e) {
-    //   _gantiBubbleLoading('Maaf, terjadi kesalahan. Silakan coba lagi.');
-    // }
-    //
-    // ── Sementara pakai dummy response ─────────────────────
-    // TODO: Hapus simulasi ini saat API tersedia
-    await Future.delayed(const Duration(seconds: 1));
-    _gantiBubbleLoading(
-      'Maaf, fitur chatbot sedang dalam pengembangan. '
-          'Silakan coba lagi nanti setelah server tersedia.',
-    );
+    try {
+      print("KIRIM: $teks");
+      final jawaban = await ChatbotRepository.kirimPesan(teks);
+
+      _gantiBubbleLoading(jawaban);
+    } catch (e) {
+      print("ERROR CHATBOT: $e");
+
+      _gantiBubbleLoading(
+        "Maaf, terjadi kesalahan. Silakan coba lagi.",
+      );
+    }
   }
 
-  /// Ganti bubble loading dengan jawaban bot
   void _gantiBubbleLoading(String jawaban) {
     setState(() {
-      // Hapus bubble loading terakhir
       final idxLoading =
       _pesanList.lastIndexWhere((p) => p.isLoading);
       if (idxLoading != -1) {

@@ -5,6 +5,7 @@ import 'package:tbcare/features/edukasi/detail_video_page.dart';
 import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
 import 'package:tbcare/features/jadwal/jadwal_page.dart';
 import 'package:tbcare/features/layanan/layanan_kesehatan_page.dart';
+import 'package:tbcare/services/api_services.dart';
 import 'features/splash/splash_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_routes.dart';
@@ -22,15 +23,17 @@ import 'features/pengaturan/ubah_kata_sandi_page.dart';
 import 'features/pengaturan/tentang_aplikasi_page.dart';
 import 'features/pengaturan/panduan_pengguna_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.init();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

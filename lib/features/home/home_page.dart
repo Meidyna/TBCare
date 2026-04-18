@@ -10,22 +10,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  bool hasNotification = true; // dummy
+class _HomePageState extends State<HomePage> with RouteAware {
+  bool hasNotification = true;
   String? nextMedicineName;
   String? nextMedicineTime;
+
+  // Ambil nama langsung dari UserSession setiap build
+  String get _userName => UserSession.nama;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final userName = UserSession.nama;
 
     return Scaffold(
       backgroundColor: AppTheme.mainBackground,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(screenWidth, userName),
+            _buildHeader(screenWidth, _userName), // ← pakai getter langsung
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -42,28 +44,27 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppTheme.buttonBackground,
         onPressed: () => Navigator.pushNamed(context, AppRoutes.chatbot),
         child: Image.asset(
-    "assets/icons/chatbot.png",
-    width: 24,
-    height: 24,
-    ),
-    ))
-    ;
+          "assets/icons/chatbot.png",
+          width: 24,
+          height: 24,
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader(double width, String userName) {
-    Widget _buildNotificationIcon() {
+    Widget buildNotificationIcon() {
       return Stack(
         children: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
             onPressed: () {
               Navigator.pushNamed(context, AppRoutes.notifikasi);
-              },
+            },
           ),
           if (hasNotification)
             Positioned(
@@ -81,6 +82,7 @@ class _HomePageState extends State<HomePage> {
         ],
       );
     }
+
     final fontSizeGreeting = width * 0.05;
     final fontSizeName = width * 0.065;
 
@@ -101,7 +103,6 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -116,7 +117,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   Text(
-                    userName,
+                    userName.isEmpty ? 'User' : userName, // ← fallback jika kosong
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: fontSizeName,
@@ -125,7 +126,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-              _buildNotificationIcon(),
+              buildNotificationIcon(),
             ],
           ),
 
@@ -149,12 +150,10 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -168,14 +167,11 @@ class _HomePageState extends State<HomePage> {
                           color: AppTheme.buttonBackground,
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
                             const Text(
                               "Jadwal Berikutnya",
                               style: TextStyle(
@@ -183,15 +179,11 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.black54,
                               ),
                             ),
-
                             const SizedBox(height: 4),
-
                             if (nextMedicineName == null)
                               const Text(
                                 "Belum ada jadwal minum obat",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w500),
                               )
                             else
                               Column(
@@ -206,9 +198,7 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                   Text(
                                     nextMedicineTime!,
-                                    style: const TextStyle(
-                                      color: Colors.red,
-                                    ),
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                 ],
                               ),
@@ -218,7 +208,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-
                 if (nextMedicineName != null)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -237,7 +226,7 @@ class _HomePageState extends State<HomePage> {
                   ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -259,36 +248,28 @@ class _HomePageState extends State<HomePage> {
               "assets/icons/stethoscope.png",
               "Skrining Mandiri",
               AppTheme.buttonBackground,
-                  () {
-                    Navigator.pushNamed(context, AppRoutes.skrining);
-                  },
+                  () => Navigator.pushNamed(context, AppRoutes.skrining),
             ),
             _quickButton(
               "assets/icons/calendar.png",
               "Jadwal \n Obat",
               const Color(0xFFFF7800),
-                  () {
-                    Navigator.pushNamed(context, AppRoutes.jadwal);
-              },
+                  () => Navigator.pushNamed(context, AppRoutes.jadwal),
             ),
             _quickButton(
               "assets/icons/location.png",
               "Layanan Kesehatan",
               AppTheme.buttonBackground,
-                  () {
-                    Navigator.pushNamed(context, AppRoutes.layananKesehatan);
-                  },
+                  () => Navigator.pushNamed(context, AppRoutes.layananKesehatan),
             ),
             _quickButton(
               "assets/icons/book.png",
               "Konten Edukasi",
               const Color(0xFFFF7800),
-                  () {
-                    Navigator.pushNamed(context, AppRoutes.kontenEdukasi);
-                  },
+                  () => Navigator.pushNamed(context, AppRoutes.kontenEdukasi),
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -324,7 +305,7 @@ class _HomePageState extends State<HomePage> {
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -340,8 +321,7 @@ class _HomePageState extends State<HomePage> {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lightbulb_outline,
-              color: Color(0xFFFF7800)),
+          Icon(Icons.lightbulb_outline, color: Color(0xFFFF7800)),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -349,8 +329,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   "Tips Hari Ini",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 6),
                 Text(

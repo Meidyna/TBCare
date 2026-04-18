@@ -1,43 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../models/layanan_kesehatan_model.dart';
+import '../../repositories/layanan_kesehatan_repository.dart';
 
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
-class LayananKesehatanModel {
-  final String id;
-  final String nama;
-  final String tipe; // "Puskesmas" | "Rumah Sakit" | "Klinik"
-  final String alamat;
-  final String jamOperasional;
-  final String telepon;
-
-  const LayananKesehatanModel({
-    required this.id,
-    required this.nama,
-    required this.tipe,
-    required this.alamat,
-    required this.jamOperasional,
-    required this.telepon,
-  });
-
-// TODO: Uncomment saat API tersedia
-// factory LayananKesehatanModel.fromJson(Map<String, dynamic> json) {
-//   return LayananKesehatanModel(
-//     id: json['id'].toString(),
-//     nama: json['nama'],
-//     tipe: json['tipe'],
-//     alamat: json['alamat'],
-//     jamOperasional: json['jam_operasional'],
-//     telepon: json['telepon'],
-//   );
-// }
-}
-
-// ════════════════════════════════════════════════════════════════
-// PAGE
-// ════════════════════════════════════════════════════════════════
 class LayananKesehatanPage extends StatefulWidget {
   const LayananKesehatanPage({super.key});
 
@@ -47,57 +13,15 @@ class LayananKesehatanPage extends StatefulWidget {
 
 class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
 
-  // ── State ────────────────────────────────────────────────────
-
-  /// Semua data layanan dari API
-  /// Kosong dulu karena API belum ada
   List<LayananKesehatanModel> _semuaLayanan = [];
-
-  /// Hasil filter berdasarkan search
   List<LayananKesehatanModel> _layananTerfilter = [];
 
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 1;
 
   final _searchController = TextEditingController();
-
-  // ── Data dummy sementara ─────────────────────────────────────
-  // TODO: Hapus data dummy ini saat API sudah tersedia
-  final List<LayananKesehatanModel> _dataDummy = const [
-    LayananKesehatanModel(
-      id: '1',
-      nama: 'Puskesmas Kramat Jati',
-      tipe: 'Puskesmas',
-      alamat: 'Jl. Dewi Sartika No.14, Jakarta Timur',
-      jamOperasional: '08:00 - 16:00',
-      telepon: '021-80294728',
-    ),
-    LayananKesehatanModel(
-      id: '2',
-      nama: 'RS Persahabatan',
-      tipe: 'Rumah Sakit',
-      alamat: 'Jl. Persahabatan Raya No.1, Jakarta Timur',
-      jamOperasional: '24 Jam',
-      telepon: '021-930745638',
-    ),
-    LayananKesehatanModel(
-      id: '3',
-      nama: 'Klinik TB Sehat Sentosa',
-      tipe: 'Klinik',
-      alamat: 'Jl. Raya Bogor Km 20, Jakarta Timur',
-      jamOperasional: '09:00 - 17:00',
-      telepon: '021-94883940',
-    ),
-    LayananKesehatanModel(
-      id: '4',
-      nama: 'Puskesmas Cipayung',
-      tipe: 'Puskesmas',
-      alamat: 'Jl. Raya Cipayung, Jakarta Timur',
-      jamOperasional: '08:00 - 14:00',
-      telepon: '021-3874945',
-    ),
-  ];
-
-  // ── Lifecycle ────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -113,40 +37,47 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     super.dispose();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI — ganti bagian TODO saat API tersedia
-  // ════════════════════════════════════════════════════════════
+  Future<void> _loadLayanan({bool loadMore = false}) async {
+    if (loadMore) {
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() => _isLoading = true);
+      _currentPage = 1;
+    }
 
-  /// Load daftar layanan kesehatan dari API
-  Future<void> _loadLayanan() async {
-    setState(() => _isLoading = true);
-
-    // TODO: Ganti dengan pemanggilan API, contoh:
-    // try {
-    //   final response = await ApiService.getLayananKesehatan();
-    //   setState(() {
-    //     _semuaLayanan = (response as List)
-    //         .map((e) => LayananKesehatanModel.fromJson(e))
-    //         .toList();
-    //     _layananTerfilter = _semuaLayanan;
-    //   });
-    // } catch (e) {
-    //   // handle error
-    // } finally {
-    //   setState(() => _isLoading = false);
-    // }
-
-    // Sementara pakai data dummy
-    // TODO: Hapus baris ini saat API sudah tersedia
-    await Future.delayed(const Duration(milliseconds: 300)); // simulasi loading
-    setState(() {
-      _semuaLayanan = _dataDummy;
-      _layananTerfilter = _dataDummy;
-      _isLoading = false;
-    });
+    try {
+      final data = await LayananRepository.getLayanan(page: _currentPage);
+      setState(() {
+        if (loadMore) {
+          _semuaLayanan.addAll(data);
+        } else {
+          _semuaLayanan = data;
+        }
+        _layananTerfilter = _semuaLayanan;
+        _hasMoreData = data.length >= 20;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+    }
   }
 
-  /// Filter layanan berdasarkan teks pencarian
+  Future<void> _loadMore() async {
+    _currentPage++;
+    await _loadLayanan(loadMore: true);
+  }
+
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
     setState(() {
@@ -174,12 +105,9 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     final height = size.height;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    // Sama persis dengan jadwal_page untuk konsistensi
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
-    // Search bar overlap ke header (setengah di dalam, setengah di luar)
     final double searchTopOffset = headerTotal - 28.0;
-    // Tinggi search bar ~56, separuh bawah = 28, + gap
     const double listPaddingTop = 28.0 + 40.0;
 
     return Scaffold(
@@ -203,19 +131,49 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, listPaddingTop, width * 0.05, 0),
               children: [
-                // Hasil kosong saat search tidak ketemu
+
+                // Hasil kosong
                 if (_layananTerfilter.isEmpty)
                   _buildEmpty()
                 else
                   ..._layananTerfilter
                       .map((l) => _buildKartuLayanan(width, l)),
 
+                // Tombol Load More (hanya tampil saat tidak sedang search)
+                if (_hasMoreData && _searchController.text.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: _isLoadingMore
+                        ? const Center(child: CircularProgressIndicator())
+                        : SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: _loadMore,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.buttonBackground,
+                          side: const BorderSide(
+                              color: AppTheme.buttonBackground),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Muat Lebih Banyak',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ),
+
                 SizedBox(height: height * 0.1),
               ],
             ),
           ),
 
-          /// ── SEARCH BAR (mengambang overlap header) ─────────
+          /// ── SEARCH BAR ─────────────────────────────────────
           Positioned(
             top: searchTopOffset,
             left: width * 0.05,
@@ -277,7 +235,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Search bar mengambang dengan shadow
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
@@ -296,17 +253,14 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Cari nama layanan kesehatan...',
-          hintStyle:
-          TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: const Icon(Icons.location_on_outlined,
               color: AppTheme.buttonBackground, size: 20),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
             icon: Icon(Icons.close,
                 size: 18, color: Colors.grey.shade400),
-            onPressed: () {
-              _searchController.clear();
-            },
+            onPressed: () => _searchController.clear(),
           )
               : null,
           border: InputBorder.none,
@@ -317,7 +271,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Tampilan saat tidak ada hasil pencarian
   Widget _buildEmpty() {
     return Container(
       width: double.infinity,
@@ -346,7 +299,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Kartu satu layanan kesehatan
   Widget _buildKartuLayanan(double width, LayananKesehatanModel layanan) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -388,8 +340,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                // Nama
                 Text(
                   layanan.nama,
                   style: const TextStyle(
@@ -397,36 +347,21 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
                     fontSize: 15,
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
-                // Badge tipe
                 _buildBadgeTipe(layanan.tipe),
-
                 const SizedBox(height: 8),
-
-                // Divider tipis
                 Divider(color: Colors.grey.shade100, height: 1),
-
                 const SizedBox(height: 8),
-
-                // Alamat
                 _buildInfoRow(
                   icon: Icons.location_on_outlined,
                   teks: layanan.alamat,
                 ),
-
                 const SizedBox(height: 4),
-
-                // Jam operasional
                 _buildInfoRow(
                   icon: Icons.access_time_rounded,
                   teks: layanan.jamOperasional,
                 ),
-
                 const SizedBox(height: 4),
-
-                // Telepon
                 _buildInfoRow(
                   icon: Icons.phone_outlined,
                   teks: layanan.telepon,
@@ -439,7 +374,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Badge warna berdasarkan tipe layanan
   Widget _buildBadgeTipe(String tipe) {
     Color bgColor;
     Color textColor;
@@ -479,7 +413,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Baris info (ikon + teks)
   Widget _buildInfoRow({required IconData icon, required String teks}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,7 +429,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     );
   }
 
-  /// Ikon berdasarkan tipe layanan
   IconData _ikonTipe(String tipe) {
     switch (tipe) {
       case 'Puskesmas':

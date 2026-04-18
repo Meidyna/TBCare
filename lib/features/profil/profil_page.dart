@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/session/user_session.dart';
+import '../../repositories/profil_repository.dart';
 
 // ════════════════════════════════════════════════════════════════
 // MODEL
@@ -56,30 +57,24 @@ class _ProfilPageState extends State<ProfilPage> {
 
   Future<void> _loadProfil() async {
     setState(() => _isLoading = true);
-
-    // TODO: Ganti dengan pemanggilan API:
-    // try {
-    //   final response = await ApiService.getProfil();
-    //   setState(() {
-    //     _profil = ProfilModel.fromJson(response);
-    //   });
-    // } catch (e) {
-    //   // handle error
-    // } finally {
-    //   setState(() => _isLoading = false);
-    // }
-
-    // Sementara pakai data dari UserSession
-    // TODO: Hapus simulasi ini saat API tersedia
-    await Future.delayed(const Duration(milliseconds: 200));
-    setState(() {
-      _profil = ProfilModel(
-        nama: UserSession.nama,
-        email: UserSession.email, //
-        telepon: UserSession.telepon,  // TODO: ambil dari API
-      );
-      _isLoading = false;
-    });
+    try {
+      await ProfilRepository.getProfile(); // ← ambil dari API & update UserSession
+      setState(() {
+        _profil = ProfilModel(
+          nama: UserSession.nama,
+          email: UserSession.email,
+          telepon: UserSession.telepon,
+        );
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat profil: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _editProfil() async {
