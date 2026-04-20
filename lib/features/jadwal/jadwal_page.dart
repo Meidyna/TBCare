@@ -1,42 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
-
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
-class ObatModel {
-  final String id;
-  final String nama;
-  final String dosis;
-  final String jam;
-  bool sudahDiminum;
-
-  ObatModel({
-    required this.id,
-    required this.nama,
-    required this.dosis,
-    required this.jam,
-    this.sudahDiminum = false,
-  });
-
-// TODO: Uncomment saat API tersedia
-// factory ObatModel.fromJson(Map<String, dynamic> json) {
-//   return ObatModel(
-//     id: json['id'].toString(),
-//     nama: json['nama'],
-//     dosis: json['dosis'],
-//     jam: json['jam'],
-//     sudahDiminum: json['sudah_diminum'] ?? false,
-//   );
-// }
-}
+import '../../repositories/obat_repository.dart';
+import '../../models/obat_model.dart';
 
 // ════════════════════════════════════════════════════════════════
 // DIALOG TAMBAH OBAT
 // ════════════════════════════════════════════════════════════════
 class _TambahObatDialog extends StatefulWidget {
-  final void Function(ObatModel) onSimpan;
+  final void Function(String nama, String dosis, List<String> waktuMinum) onSimpan;
 
   const _TambahObatDialog({required this.onSimpan});
 
@@ -48,7 +20,7 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
   final _formKey = GlobalKey<FormState>();
   final _namaController = TextEditingController();
   final _dosisController = TextEditingController();
-  TimeOfDay _waktu = const TimeOfDay(hour: 8, minute: 0);
+  List<TimeOfDay> _waktuList = [const TimeOfDay(hour: 8, minute: 0)];
 
   @override
   void dispose() {
@@ -57,16 +29,13 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
     super.dispose();
   }
 
-  String get _waktuFormatted {
-    final jam = _waktu.hour.toString().padLeft(2, '0');
-    final menit = _waktu.minute.toString().padLeft(2, '0');
-    return '$jam:$menit';
-  }
+  String _formatWaktu(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  Future<void> _pilihWaktu() async {
-    final TimeOfDay? pilihan = await showTimePicker(
+  Future<void> _pilihWaktu(int index) async {
+    final pilihan = await showTimePicker(
       context: context,
-      initialTime: _waktu,
+      initialTime: _waktuList[index],
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
@@ -77,22 +46,30 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
         child: child!,
       ),
     );
-    if (pilihan != null) setState(() => _waktu = pilihan);
+    if (pilihan != null) {
+      setState(() => _waktuList[index] = pilihan);
+    }
+  }
+
+  void _tambahWaktu() {
+    setState(() => _waktuList.add(const TimeOfDay(hour: 12, minute: 0)));
+  }
+
+  void _hapusWaktu(int index) {
+    if (_waktuList.length > 1) {
+      setState(() => _waktuList.removeAt(index));
+    }
   }
 
   void _simpan() {
     if (!_formKey.currentState!.validate()) return;
-
-    final obatBaru = ObatModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      nama: _namaController.text.trim(),
-      dosis: _dosisController.text.trim(),
-      jam: _waktuFormatted,
-      sudahDiminum: false,
-    );
-
+    final waktuMinum = _waktuList.map(_formatWaktu).toList();
     Navigator.pop(context);
-    widget.onSimpan(obatBaru);
+    widget.onSimpan(
+      _namaController.text.trim(),
+      _dosisController.text.trim(),
+      waktuMinum,
+    );
   }
 
   @override
@@ -114,20 +91,18 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
                 children: [
                   const Text(
                     "Tambah Obat Baru",
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close,
-                        size: 20, color: Colors.black54),
+                    child: const Icon(Icons.close, size: 20, color: Colors.black54),
                   ),
                 ],
               ),
 
               const SizedBox(height: 20),
 
-              _label("Nama obat"),
+              _label("Nama Obat"),
               const SizedBox(height: 6),
               _textField(
                 controller: _namaController,
@@ -152,35 +127,58 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
 
               const SizedBox(height: 16),
 
-              _label("Waktu"),
+              _label("Waktu Minum"),
               const SizedBox(height: 6),
-              GestureDetector(
-                onTap: _pilihWaktu,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 13),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.access_time_rounded,
-                          size: 18, color: Colors.grey.shade500),
-                      const SizedBox(width: 8),
-                      Text(_waktuFormatted,
-                          style: const TextStyle(fontSize: 14)),
-                      const Spacer(),
-                      Icon(Icons.keyboard_arrow_down_rounded,
-                          color: Colors.grey.shade400),
-                    ],
-                  ),
+
+              ..._waktuList.asMap().entries.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _pilihWaktu(e.key),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 13),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time_rounded,
+                                  size: 18, color: Colors.grey.shade500),
+                              const SizedBox(width: 8),
+                              Text(_formatWaktu(e.value),
+                                  style: const TextStyle(fontSize: 14)),
+                              const Spacer(),
+                              Icon(Icons.keyboard_arrow_down_rounded,
+                                  color: Colors.grey.shade400),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_waktuList.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline,
+                            color: Colors.red),
+                        onPressed: () => _hapusWaktu(e.key),
+                      ),
+                  ],
                 ),
+              )),
+
+              TextButton.icon(
+                onPressed: _tambahWaktu,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text("Tambah Waktu"),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.buttonBackground),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               SizedBox(
                 width: double.infinity,
@@ -192,13 +190,11 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: const Text(
                     "Simpan",
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -212,9 +208,7 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
   Widget _label(String teks) => Text(
     teks,
     style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: Colors.black87),
+        fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
   );
 
   Widget _textField({
@@ -231,7 +225,6 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-        // ✅ fillColor putih agar kolom isian berwarna putih
         filled: true,
         fillColor: Colors.white,
         contentPadding:
@@ -246,8 +239,8 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-              color: AppTheme.buttonBackground, width: 2),
+          borderSide:
+          const BorderSide(color: AppTheme.buttonBackground, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -274,15 +267,15 @@ class JadwalPage extends StatefulWidget {
 
 class _JadwalPageState extends State<JadwalPage> {
 
-  List<ObatModel> _daftarObat = [];
+  JadwalHariIniModel? _jadwal;
   bool _isLoading = false;
 
-  List<ObatModel> get _obatBelumDiminum =>
-      _daftarObat.where((o) => !o.sudahDiminum).toList();
+  // ── Getter dari data API ──────────────────────────────────────
+  List<ObatModel> get _obatBelumDiminum => _jadwal?.obatBerikutnya ?? [];
   List<ObatModel> get _obatSudahDiminum =>
-      _daftarObat.where((o) => o.sudahDiminum).toList();
-  int get _totalObat => _daftarObat.length;
-  int get _obatDiminum => _obatSudahDiminum.length;
+      (_jadwal?.semuaObat ?? []).where((o) => o.sudahMinum).toList();
+  int get _totalObat => _jadwal?.totalObat ?? 0;
+  int get _obatDiminum => _jadwal?.sudahMinum ?? 0;
   double get _progress => _totalObat == 0 ? 0 : _obatDiminum / _totalObat;
 
   String get _tanggalHariIni {
@@ -296,29 +289,51 @@ class _JadwalPageState extends State<JadwalPage> {
   @override
   void initState() {
     super.initState();
-    _loadObat();
+    _loadJadwal();
   }
 
-  Future<void> _loadObat() async {
+  // ════════════════════════════════════════════════════════════
+  // FUNGSI
+  // ════════════════════════════════════════════════════════════
+
+  Future<void> _loadJadwal() async {
     setState(() => _isLoading = true);
-    // TODO: fetch dari API
-    setState(() => _isLoading = false);
+    try {
+      final data = await ObatRepository.getJadwalHariIni();
+      setState(() => _jadwal = data);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat jadwal: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _tandaiDiminum(ObatModel obat) {
-    setState(() => obat.sudahDiminum = true);
-    // TODO: await ApiService.tandaiDiminum(obat.id);
+  Future<void> _tandaiDiminum(ObatModel obat) async {
+    try {
+      await ObatRepository.konfirmasiMinum(obat.id);
+      await _loadJadwal(); // refresh dari API
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal konfirmasi: $e')),
+        );
+      }
+    }
   }
 
-  void _hapusObat(ObatModel obat) {
+  Future<void> _hapusObat(ObatModel obat) async {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hapus Obat'),
         content: Text(
-          'Hapus "${obat.nama}" dari jadwal?\n'
-              'Obat ini tidak akan muncul lagi dan harus ditambahkan ulang.',
+          'Hapus "${obat.namaObat}" dari jadwal?\n'
+              'Obat ini tidak akan muncul lagi.',
         ),
         actions: [
           TextButton(
@@ -327,10 +342,18 @@ class _JadwalPageState extends State<JadwalPage> {
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              setState(() => _daftarObat.removeWhere((o) => o.id == obat.id));
-              // TODO: await ApiService.hapusObat(obat.id);
+              try {
+                await ObatRepository.hapusObat(obat.id);
+                await _loadJadwal(); // refresh dari API
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal hapus: $e')),
+                  );
+                }
+              }
             },
             child: const Text('Hapus'),
           ),
@@ -344,13 +367,29 @@ class _JadwalPageState extends State<JadwalPage> {
       context: context,
       barrierDismissible: true,
       builder: (ctx) => _TambahObatDialog(
-        onSimpan: (obatBaru) {
-          setState(() => _daftarObat.add(obatBaru));
-          // TODO: await ApiService.tambahObat(obatBaru);
+        onSimpan: (nama, dosis, waktuMinum) async {
+          try {
+            await ObatRepository.tambahObat(
+              namaObat: nama,
+              dosis: dosis,
+              waktuMinum: waktuMinum,
+            );
+            await _loadJadwal(); // refresh dari API
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Gagal tambah obat: $e')),
+              );
+            }
+          }
         },
       ),
     );
   }
+
+  // ════════════════════════════════════════════════════════════
+  // BUILD
+  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -370,23 +409,29 @@ class _JadwalPageState extends State<JadwalPage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
+
+          /// ── HEADER ───────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
+
+          /// ── KONTEN SCROLL ────────────────────────────
           Positioned(
             top: cardTopOffset, left: 0, right: 0, bottom: 0,
             child: ListView(
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, listPaddingTop, width * 0.05, 0),
               children: [
+
                 _buildTanggal(width),
                 SizedBox(height: height * 0.02),
 
-                Text("Obat Berikutnya",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: width * 0.04)),
+                Text(
+                  "Obat Berikutnya",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: width * 0.04),
+                ),
                 SizedBox(height: height * 0.015),
 
                 if (_obatBelumDiminum.isEmpty)
@@ -409,6 +454,8 @@ class _JadwalPageState extends State<JadwalPage> {
               ],
             ),
           ),
+
+          /// ── PROGRESS CARD ────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: width * 0.05,
@@ -419,6 +466,10 @@ class _JadwalPageState extends State<JadwalPage> {
       ),
     );
   }
+
+  // ════════════════════════════════════════════════════════════
+  // WIDGET BUILDERS
+  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -441,15 +492,19 @@ class _JadwalPageState extends State<JadwalPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Jadwal Obat",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: width * 0.05,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                "Jadwal Obat",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: width * 0.05,
+                    fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 2),
-              Text("Kelola jadwal minum obat Anda",
-                  style: TextStyle(
-                      color: Colors.white70, fontSize: width * 0.032)),
+              Text(
+                "Kelola jadwal minum obat Anda",
+                style: TextStyle(
+                    color: Colors.white70, fontSize: width * 0.032),
+              ),
             ],
           ),
         ],
@@ -473,27 +528,33 @@ class _JadwalPageState extends State<JadwalPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Progress Hari Ini",
-              style:
-              TextStyle(fontSize: width * 0.035, color: Colors.black54)),
+          Text(
+            "Progress Hari Ini",
+            style: TextStyle(fontSize: width * 0.035, color: Colors.black54),
+          ),
           SizedBox(height: height * 0.01),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("$_obatDiminum / $_totalObat",
-                  style: TextStyle(
-                      fontSize: width * 0.055, fontWeight: FontWeight.bold)),
+              Text(
+                "$_obatDiminum / $_totalObat",
+                style: TextStyle(
+                    fontSize: width * 0.055, fontWeight: FontWeight.bold),
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text("${(_progress * 100).toInt()}%",
-                      style: TextStyle(
-                          fontSize: width * 0.055,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.buttonBackground)),
-                  const Text("Selesai",
-                      style:
-                      TextStyle(color: Colors.black54, fontSize: 12)),
+                  Text(
+                    "${(_progress * 100).toInt()}%",
+                    style: TextStyle(
+                        fontSize: width * 0.055,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.buttonBackground),
+                  ),
+                  const Text(
+                    "Selesai",
+                    style: TextStyle(color: Colors.black54, fontSize: 12),
+                  ),
                 ],
               ),
             ],
@@ -519,9 +580,11 @@ class _JadwalPageState extends State<JadwalPage> {
         Icon(Icons.calendar_today,
             color: AppTheme.buttonBackground, size: width * 0.05),
         SizedBox(width: width * 0.02),
-        Text(_tanggalHariIni,
-            style: TextStyle(
-                fontSize: width * 0.038, fontWeight: FontWeight.w500)),
+        Text(
+          _tanggalHariIni,
+          style: TextStyle(
+              fontSize: width * 0.038, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -536,10 +599,12 @@ class _JadwalPageState extends State<JadwalPage> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Text(pesan,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-              color: Colors.grey.shade500, fontSize: 13, height: 1.5)),
+      child: Text(
+        pesan,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+            color: Colors.grey.shade500, fontSize: 13, height: 1.5),
+      ),
     );
   }
 
@@ -560,19 +625,25 @@ class _JadwalPageState extends State<JadwalPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(obat.nama,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(obat.dosis,
-                    style:
-                    TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                Text(
+                  obat.namaObat,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  obat.dosis,
+                  style: TextStyle(
+                      color: Colors.grey.shade600, fontSize: 13),
+                ),
                 Row(
                   children: [
                     const Icon(Icons.access_time,
                         size: 12, color: Colors.orange),
                     const SizedBox(width: 4),
-                    Text(obat.jam,
-                        style: const TextStyle(
-                            color: Colors.orange, fontSize: 12)),
+                    Text(
+                      obat.waktuMinum.join(', '), // ← multiple waktu
+                      style: const TextStyle(
+                          color: Colors.orange, fontSize: 12),
+                    ),
                   ],
                 ),
               ],
@@ -599,9 +670,11 @@ class _JadwalPageState extends State<JadwalPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text("Semua Obat",
-            style: TextStyle(
-                fontSize: width * 0.04, fontWeight: FontWeight.bold)),
+        Text(
+          "Semua Obat",
+          style: TextStyle(
+              fontSize: width * 0.04, fontWeight: FontWeight.bold),
+        ),
         OutlinedButton.icon(
           onPressed: _tampilkanDialogTambahObat,
           icon: const Icon(Icons.add, size: 16),
@@ -643,22 +716,28 @@ class _JadwalPageState extends State<JadwalPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(obat.nama,
-                    style: const TextStyle(
-                        decoration: TextDecoration.lineThrough,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.bold)),
-                Text(obat.dosis,
-                    style:
-                    TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                Text(
+                  obat.namaObat,
+                  style: const TextStyle(
+                      decoration: TextDecoration.lineThrough,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  obat.dosis,
+                  style: TextStyle(
+                      color: Colors.grey.shade500, fontSize: 13),
+                ),
                 Row(
                   children: [
                     Icon(Icons.access_time,
                         size: 12, color: Colors.grey.shade500),
                     const SizedBox(width: 4),
-                    Text(obat.jam,
-                        style: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 12)),
+                    Text(
+                      obat.waktuMinum.join(', '), // ← multiple waktu
+                      style: TextStyle(
+                          color: Colors.grey.shade500, fontSize: 12),
+                    ),
                   ],
                 ),
               ],

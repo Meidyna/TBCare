@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/session/user_session.dart';
+import '../../repositories/obat_repository.dart';
+import '../../models/obat_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,13 +12,37 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with RouteAware {
+class _HomePageState extends State<HomePage> {
   bool hasNotification = true;
-  String? nextMedicineName;
-  String? nextMedicineTime;
 
-  // Ambil nama langsung dari UserSession setiap build
+  // ← Data jadwal dari API
+  ObatModel? _obatBerikutnya;
+  bool _isLoadingJadwal = false;
+
   String get _userName => UserSession.nama;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadJadwal();
+  }
+
+  Future<void> _loadJadwal() async {
+    setState(() => _isLoadingJadwal = true);
+    try {
+      final jadwal = await ObatRepository.getJadwalHariIni();
+      setState(() {
+        // Ambil obat pertama yang belum diminum
+        _obatBerikutnya = jadwal.obatBerikutnya.isNotEmpty
+            ? jadwal.obatBerikutnya.first
+            : null;
+      });
+    } catch (e) {
+      setState(() => _obatBerikutnya = null);
+    } finally {
+      setState(() => _isLoadingJadwal = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +53,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(screenWidth, _userName), // ← pakai getter langsung
+            _buildHeader(screenWidth, _userName),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -62,9 +88,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
         children: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.notifikasi);
-            },
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.notifikasi),
           ),
           if (hasNotification)
             Positioned(
@@ -83,9 +107,6 @@ class _HomePageState extends State<HomePage> with RouteAware {
       );
     }
 
-    final fontSizeGreeting = width * 0.05;
-    final fontSizeName = width * 0.065;
-
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
@@ -96,13 +117,12 @@ class _HomePageState extends State<HomePage> with RouteAware {
       ),
       decoration: const BoxDecoration(
         color: AppTheme.buttonBackground,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Greeting + notifikasi ──────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -111,16 +131,13 @@ class _HomePageState extends State<HomePage> with RouteAware {
                 children: [
                   Text(
                     "Selamat Datang,",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: fontSizeGreeting,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: width * 0.05),
                   ),
                   Text(
-                    userName.isEmpty ? 'User' : userName, // ← fallback jika kosong
+                    userName.isEmpty ? 'User' : userName,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: fontSizeName,
+                      fontSize: width * 0.065,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -132,6 +149,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
 
           const SizedBox(height: 25),
 
+          // ── Card jadwal berikutnya ─────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -174,13 +192,18 @@ class _HomePageState extends State<HomePage> with RouteAware {
                           children: [
                             const Text(
                               "Jadwal Berikutnya",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
+                              style: TextStyle(fontSize: 13, color: Colors.black54),
                             ),
                             const SizedBox(height: 4),
-                            if (nextMedicineName == null)
+
+                            // ← Tampilkan data dari API
+                            if (_isLoadingJadwal)
+                              const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else if (_obatBerikutnya == null)
                               const Text(
                                 "Belum ada jadwal minum obat",
                                 style: TextStyle(fontWeight: FontWeight.w500),
@@ -190,14 +213,14 @@ class _HomePageState extends State<HomePage> with RouteAware {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    nextMedicineName!,
+                                    _obatBerikutnya!.namaObat,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
                                   ),
                                   Text(
-                                    nextMedicineTime!,
+                                    _obatBerikutnya!.waktuMinum.join(', '),
                                     style: const TextStyle(color: Colors.red),
                                   ),
                                 ],
@@ -208,7 +231,9 @@ class _HomePageState extends State<HomePage> with RouteAware {
                     ],
                   ),
                 ),
-                if (nextMedicineName != null)
+
+                // Tombol Lihat hanya muncul kalau ada obat
+                if (_obatBerikutnya != null)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.buttonBackground,
@@ -216,9 +241,7 @@ class _HomePageState extends State<HomePage> with RouteAware {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, AppRoutes.jadwal);
-                    },
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.jadwal),
                     child: const Text(
                       "Lihat",
                       style: TextStyle(color: Colors.white),
