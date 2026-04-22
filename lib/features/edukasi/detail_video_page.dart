@@ -1,16 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import 'konten_edukasi_page.dart';
 
-// TODO saat API tersedia:
-//   Tambahkan field `videoUrl` di KontenEdukasiModel dari response API.
-//   Integrasikan dengan package video_player atau youtube_player_flutter.
-//   GET /edukasi/{id} → ambil videoUrl dan deskripsi lengkap
-
-class DetailVideoPage extends StatelessWidget {
+class DetailVideoPage extends StatefulWidget {
   final KontenEdukasiModel konten;
 
   const DetailVideoPage({super.key, required this.konten});
+
+  @override
+  State<DetailVideoPage> createState() => _DetailVideoPageState();
+}
+
+class _DetailVideoPageState extends State<DetailVideoPage> {
+  VideoPlayerController? _controller;
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    if (widget.konten.urlVideo == null || widget.konten.urlVideo!.isEmpty) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+      return;
+    }
+
+    try {
+      // Gabungkan baseUrl + path video
+      final videoUrl = '${ApiConstants.baseUrl}${widget.konten.urlVideo}';
+      _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+      await _controller!.initialize();
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlay() {
+    if (_controller == null) return;
+    setState(() {
+      _controller!.value.isPlaying
+          ? _controller!.pause()
+          : _controller!.play();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +89,7 @@ class DetailVideoPage extends StatelessWidget {
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                  width * 0.05, 0, width * 0.05, 32),
+              padding: EdgeInsets.fromLTRB(width * 0.05, 0, width * 0.05, 32),
               child: _buildCardVideo(context, width),
             ),
           ),
@@ -48,10 +97,6 @@ class DetailVideoPage extends StatelessWidget {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(BuildContext context, double width,
       double headerTotal, double topPadding) {
@@ -77,7 +122,7 @@ class DetailVideoPage extends StatelessWidget {
           SizedBox(width: width * 0.02),
           Expanded(
             child: Text(
-              konten.judul,
+              widget.konten.judul,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -93,7 +138,6 @@ class DetailVideoPage extends StatelessWidget {
     );
   }
 
-  /// Satu card berisi: player + badge + judul + divider + deskripsi + info
   Widget _buildCardVideo(BuildContext context, double width) {
     return Container(
       decoration: BoxDecoration(
@@ -114,12 +158,11 @@ class DetailVideoPage extends StatelessWidget {
 
           // ── Area Video Player ─────────────────────────────
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: _buildVideoPlayer(width),
           ),
 
-          // ── Badge + Judul + Divider + Deskripsi + Info ────
+          // ── Badge + Judul + Divider + Deskripsi ──────────
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -128,8 +171,7 @@ class DetailVideoPage extends StatelessWidget {
 
                 // Badge Video
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF0E6),
                     borderRadius: BorderRadius.circular(20),
@@ -146,9 +188,8 @@ class DetailVideoPage extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                // Judul
                 Text(
-                  konten.judul,
+                  widget.konten.judul,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -157,50 +198,15 @@ class DetailVideoPage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 12),
-
-                // Divider
                 Divider(color: Colors.grey.shade100, thickness: 1),
-
                 const SizedBox(height: 12),
 
-                // Deskripsi
                 Text(
-                  konten.deskripsi,
+                  widget.konten.deskripsi,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade600,
                     height: 1.6,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Info koneksi server
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.buttonBackground.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.info_outline,
-                          color: AppTheme.buttonBackground, size: 16),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Video akan tersedia setelah koneksi ke server. '
-                              'Pastikan koneksi internet Anda aktif.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.buttonBackground,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
@@ -211,59 +217,107 @@ class DetailVideoPage extends StatelessWidget {
     );
   }
 
-  /// Placeholder video player.
-  /// TODO: Ganti dengan VideoPlayer atau YoutubePlayer saat API tersedia:
-  ///
-  /// Opsi 1 - Video dari URL biasa (mp4):
-  ///   dependency: video_player: ^2.x.x
-  ///   Widget: VideoPlayer(controller)
-  ///
-  /// Opsi 2 - Video dari YouTube:
-  ///   dependency: youtube_player_flutter: ^8.x.x
-  ///   Widget: YoutubePlayer(controller: YoutubePlayerController(
-  ///     initialVideoId: YoutubePlayer.convertUrlToId(konten.videoUrl!),
-  ///   ))
   Widget _buildVideoPlayer(double width) {
-    return Container(
-      width: double.infinity,
-      height: width * 0.55,
-      color: AppTheme.buttonBackground.withOpacity(0.08),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Ikon play
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppTheme.buttonBackground.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.play_arrow_rounded,
-              color: AppTheme.buttonBackground,
-              size: 36,
-            ),
-          ),
+    // Loading
+    if (_isLoading) {
+      return Container(
+        width: double.infinity,
+        height: width * 0.55,
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
 
-          // Label placeholder pojok bawah
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(6),
+    // Error / tidak ada video
+    if (_hasError || _controller == null) {
+      return Container(
+        width: double.infinity,
+        height: width * 0.55,
+        color: AppTheme.buttonBackground.withOpacity(0.08),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.videocam_off_rounded,
+                  color: AppTheme.buttonBackground, size: 40),
+              SizedBox(height: 8),
+              Text(
+                'Video tidak tersedia',
+                style: TextStyle(
+                  color: AppTheme.buttonBackground,
+                  fontSize: 13,
+                ),
               ),
-              child: const Text(
-                'Video akan tersedia setelah terhubung ke server',
-                style: TextStyle(color: Colors.white, fontSize: 10),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Video player
+    return GestureDetector(
+      onTap: _togglePlay,
+      child: Container(
+        width: double.infinity,
+        height: width * 0.55,
+        color: Colors.black,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Video
+            AspectRatio(
+              aspectRatio: _controller!.value.aspectRatio,
+              child: VideoPlayer(_controller!),
+            ),
+
+            // Tombol play/pause overlay
+            ValueListenableBuilder(
+              valueListenable: _controller!,
+              builder: (context, value, child) {
+                return AnimatedOpacity(
+                  opacity: value.isPlaying ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Progress bar di bawah
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder(
+                valueListenable: _controller!,
+                builder: (context, value, child) {
+                  return VideoProgressIndicator(
+                    _controller!,
+                    allowScrubbing: true,
+                    colors: const VideoProgressColors(
+                      playedColor: AppTheme.buttonBackground,
+                      bufferedColor: Colors.white30,
+                      backgroundColor: Colors.white10,
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

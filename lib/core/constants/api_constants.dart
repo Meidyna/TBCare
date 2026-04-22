@@ -5,7 +5,7 @@ class ApiConstants {
   static const String login = "/api/auth/login";
   static const String register = "/api/auth/register";
   static const String forgotPassword = "/api/auth/forgot-password";
-
+  static const String logout = "/api/auth/logout";
   static const String getProfile = "/api/users/profile";
   static const String updateProfile = "/api/users/profile";
   static const String changePassword = "/api/users/change-password";
@@ -38,8 +38,5 @@ class ApiConstants {
 
   // ================= LAYANAN KESEHATAN =================
   static const String layananKesehatan = "/api/layanan-kesehatan";
-
-  // ================= NOTIFIKASI =================
-  static const String getNotifikasi = "/api/notifikasi";
 }
 

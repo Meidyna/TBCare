@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/session/user_session.dart';
+import '../../core/constants/api_constants.dart';
 import '../../repositories/profil_repository.dart';
+import '../../services/api_services.dart';
+import '../../services/notification_service.dart';
 
 // ════════════════════════════════════════════════════════════════
 // MODEL
@@ -17,15 +22,6 @@ class ProfilModel {
     required this.email,
     required this.telepon,
   });
-
-// TODO: Uncomment saat API tersedia
-// factory ProfilModel.fromJson(Map<String, dynamic> json) {
-//   return ProfilModel(
-//     nama: json['nama'],
-//     email: json['email'],
-//     telepon: json['telepon'] ?? '',
-//   );
-// }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -40,11 +36,9 @@ class ProfilPage extends StatefulWidget {
 
 class _ProfilPageState extends State<ProfilPage> {
 
-  // ── State ────────────────────────────────────────────────────
   ProfilModel? _profil;
   bool _isLoading = false;
 
-  // ── Lifecycle ────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -58,7 +52,7 @@ class _ProfilPageState extends State<ProfilPage> {
   Future<void> _loadProfil() async {
     setState(() => _isLoading = true);
     try {
-      await ProfilRepository.getProfile(); // ← ambil dari API & update UserSession
+      await ProfilRepository.getProfile();
       setState(() {
         _profil = ProfilModel(
           nama: UserSession.nama,
@@ -90,11 +84,9 @@ class _ProfilPageState extends State<ProfilPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Keluar'),
-        content: const Text(
-            'Apakah Anda yakin ingin keluar dari akun ini?'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -102,21 +94,35 @@ class _ProfilPageState extends State<ProfilPage> {
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              // TODO: Panggil ApiService.logout() jika ada
-              UserSession.hapus();
-              // Kembali ke halaman login dan hapus semua route sebelumnya
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login',
-                    (route) => false,
-              );
+              await _prosesLogout();
             },
             child: const Text('Keluar'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _prosesLogout() async {
+    try {
+      await ApiService.post(ApiConstants.logout, {});
+    } catch (e) {}
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('foto_profil_${UserSession.email}');
+
+    await NotificationService.hapusSemuaHistory();
+    await NotificationService.batalkanSemuaNotifikasi();
+    UserSession.hapus();
+
+    if (mounted) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login',
+            (route) => false,
+      );
+    }
   }
 
   // ════════════════════════════════════════════════════════════
@@ -131,7 +137,6 @@ class _ProfilPageState extends State<ProfilPage> {
 
     const double headerContentHeight = 200.0;
     final double headerTotal = topPadding + headerContentHeight;
-    // Card overlap ke header — cukup dalam agar avatar masuk ke header
     const double cardOverlap = 130.0;
     final double cardTopOffset = headerTotal - cardOverlap;
 
@@ -153,27 +158,18 @@ class _ProfilPageState extends State<ProfilPage> {
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                  width * 0.05, 0, width * 0.05, 32),
+              padding: EdgeInsets.fromLTRB(width * 0.05, 0, width * 0.05, 32),
               child: Column(
                 children: [
-
-                  // Card data diri mengambang
                   _buildCardProfil(width),
-
                   SizedBox(height: width * 0.04),
-
-                  // Tombol Pengaturan
                   _buildTombolOutline(
                     icon: Icons.settings_outlined,
                     label: 'Pengaturan',
                     onTap: _pengaturan,
                     warna: Colors.black87,
                   ),
-
                   SizedBox(height: width * 0.03),
-
-                  // Tombol Keluar
                   _buildTombolOutline(
                     icon: Icons.logout_rounded,
                     label: 'Keluar',
@@ -212,7 +208,6 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  /// Card data diri — overlap ke header dengan shadow
   Widget _buildCardProfil(double width) {
     final profil = _profil;
     if (profil == null) return const SizedBox.shrink();
@@ -238,20 +233,23 @@ class _ProfilPageState extends State<ProfilPage> {
           Container(
             width: 100,
             height: 100,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppTheme.buttonBackground,
               shape: BoxShape.circle,
+              image: UserSession.fotoPath.isNotEmpty
+                  ? DecorationImage(
+                image: FileImage(File(UserSession.fotoPath)),
+                fit: BoxFit.cover,
+              )
+                  : null,
             ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 70,
-            ),
+            child: UserSession.fotoPath.isEmpty
+                ? const Icon(Icons.person_rounded, color: Colors.white, size: 70)
+                : null,
           ),
 
           const SizedBox(height: 12),
 
-          // ── Nama ──────────────────────────────────────────
           Text(
             profil.nama,
             style: TextStyle(
@@ -263,23 +261,15 @@ class _ProfilPageState extends State<ProfilPage> {
 
           const SizedBox(height: 4),
 
-          // ── Email singkat di bawah nama ───────────────────
           Text(
             profil.email,
-            style: TextStyle(
-              fontSize: width * 0.037,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: width * 0.037, color: Colors.grey.shade500),
           ),
 
           SizedBox(height: width * 0.05),
-
-          // ── Divider ───────────────────────────────────────
           Divider(color: Colors.grey.shade100, thickness: 2),
-
           SizedBox(height: width * 0.04),
 
-          // ── Baris info Email ──────────────────────────────
           _buildBariInfo(
             icon: Icons.mail_outline_rounded,
             label: 'Email',
@@ -289,7 +279,6 @@ class _ProfilPageState extends State<ProfilPage> {
 
           SizedBox(height: width * 0.1),
 
-          // ── Baris info Telepon ────────────────────────────
           _buildBariInfo(
             icon: Icons.phone_outlined,
             label: 'Telepon',
@@ -299,7 +288,6 @@ class _ProfilPageState extends State<ProfilPage> {
 
           SizedBox(height: width * 0.1),
 
-          // ── Tombol Edit Profil ────────────────────────────
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -322,7 +310,6 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  /// Baris satu info (ikon + label + nilai)
   Widget _buildBariInfo({
     required IconData icon,
     required String label,
@@ -359,7 +346,6 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  /// Tombol outline generik (Pengaturan / Keluar)
   Widget _buildTombolOutline({
     required IconData icon,
     required String label,

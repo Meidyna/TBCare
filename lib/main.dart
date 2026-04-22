@@ -6,6 +6,7 @@ import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
 import 'package:tbcare/features/jadwal/jadwal_page.dart';
 import 'package:tbcare/features/layanan/layanan_kesehatan_page.dart';
 import 'package:tbcare/services/api_services.dart';
+import 'package:tbcare/services/notification_service.dart';
 import 'features/splash/splash_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_routes.dart';
@@ -26,6 +27,7 @@ import 'features/pengaturan/panduan_pengguna_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ApiService.init();
+  await NotificationService.init();
   runApp(const MyApp());
 }
 

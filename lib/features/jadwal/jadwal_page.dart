@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../repositories/obat_repository.dart';
 import '../../models/obat_model.dart';
+import '../../services/notification_service.dart';
 
 // ════════════════════════════════════════════════════════════════
 // DIALOG TAMBAH OBAT
@@ -271,7 +272,27 @@ class _JadwalPageState extends State<JadwalPage> {
   bool _isLoading = false;
 
   // ── Getter dari data API ──────────────────────────────────────
-  List<ObatModel> get _obatBelumDiminum => _jadwal?.obatBerikutnya ?? [];
+  // SESUDAH
+  List<ObatModel> get _obatBelumDiminum {
+    final list = List<ObatModel>.from(_jadwal?.obatBerikutnya ?? []);
+
+    int toMinutes(String waktu) {
+      final parts = waktu.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+
+    list.sort((a, b) {
+      final aMin = a.waktuMinum.isNotEmpty
+          ? toMinutes(a.waktuMinum.first)
+          : 9999;
+      final bMin = b.waktuMinum.isNotEmpty
+          ? toMinutes(b.waktuMinum.first)
+          : 9999;
+      return aMin.compareTo(bMin);
+    });
+
+    return list;
+  }
   List<ObatModel> get _obatSudahDiminum =>
       (_jadwal?.semuaObat ?? []).where((o) => o.sudahMinum).toList();
   int get _totalObat => _jadwal?.totalObat ?? 0;
@@ -296,26 +317,33 @@ class _JadwalPageState extends State<JadwalPage> {
   // FUNGSI
   // ════════════════════════════════════════════════════════════
 
-  Future<void> _loadJadwal() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadJadwal({int retry = 3}) async {
+    if (retry == 3) setState(() => _isLoading = true); // ← hanya set loading di panggilan pertama
     try {
       final data = await ObatRepository.getJadwalHariIni();
       setState(() => _jadwal = data);
     } catch (e) {
+      if (retry > 0) {
+        await Future.delayed(const Duration(seconds: 2));
+        await _loadJadwal(retry: retry - 1);
+        return; // ← penting: stop di sini
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat jadwal: $e')),
+          const SnackBar(
+            content: Text('Koneksi bermasalah. Tarik ke bawah untuk refresh.'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
-    } finally {
-      setState(() => _isLoading = false);
     }
+    setState(() => _isLoading = false); // ← dipindah keluar dari finally
   }
 
   Future<void> _tandaiDiminum(ObatModel obat) async {
     try {
-      await ObatRepository.konfirmasiMinum(obat.id);
-      await _loadJadwal(); // refresh dari API
+      await ObatRepository.konfirmasiMinum(obat.id, obat.namaObat); // ← tambah namaObat
+      await _loadJadwal();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -345,7 +373,7 @@ class _JadwalPageState extends State<JadwalPage> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await ObatRepository.hapusObat(obat.id);
+                await ObatRepository.hapusObat(obat.id, obat.waktuMinum);
                 await _loadJadwal(); // refresh dari API
               } catch (e) {
                 if (mounted) {
@@ -419,7 +447,9 @@ class _JadwalPageState extends State<JadwalPage> {
           /// ── KONTEN SCROLL ────────────────────────────
           Positioned(
             top: cardTopOffset, left: 0, right: 0, bottom: 0,
-            child: ListView(
+            child: RefreshIndicator(         // ← tambah ini
+              onRefresh: _loadJadwal,
+              child: ListView(
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, listPaddingTop, width * 0.05, 0),
               children: [
@@ -454,6 +484,7 @@ class _JadwalPageState extends State<JadwalPage> {
               ],
             ),
           ),
+          ),                               // ← tutup RefreshIndicator
 
           /// ── PROGRESS CARD ────────────────────────────
           Positioned(
@@ -511,6 +542,8 @@ class _JadwalPageState extends State<JadwalPage> {
       ),
     );
   }
+
+
 
   Widget _buildProgressCard(double width, double height) {
     return Container(

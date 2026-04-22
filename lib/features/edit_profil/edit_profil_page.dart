@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/session/user_session.dart';
 import '../../repositories/profil_repository.dart';
@@ -28,6 +29,9 @@ class _EditProfilPageState extends State<EditProfilPage> {
     _namaController   = TextEditingController(text: UserSession.nama);
     _emailController  = TextEditingController(text: UserSession.email);
     _teleponController = TextEditingController(text: UserSession.telepon);
+    if (UserSession.fotoPath.isNotEmpty) {
+      _fotoBaru = File(UserSession.fotoPath);
+    }
   }
 
   @override
@@ -51,7 +55,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     }
   }
 
-  // ← Fungsi simpan yang benar, langsung panggil API
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
@@ -61,19 +64,30 @@ class _EditProfilPageState extends State<EditProfilPage> {
         email: _emailController.text.trim(),
         telepon: _teleponController.text.trim(),
       );
+
+      // ← Simpan path foto lokal jika ada foto baru
+      if (_fotoBaru != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('foto_profil_${UserSession.email}', _fotoBaru!.path);
+        UserSession.simpan(
+          nama: UserSession.nama,
+          email: UserSession.email,
+          telepon: UserSession.telepon,
+          token: UserSession.token,
+          fotoPath: _fotoBaru!.path,
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profil berhasil diperbarui')),
         );
-        Navigator.pop(context, true); // ← kirim true ke ProfilPage
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Gagal menyimpan: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {

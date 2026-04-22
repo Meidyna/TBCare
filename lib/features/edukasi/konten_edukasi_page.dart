@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
+import '../../repositories/edukasi_repository.dart';
 
 // ════════════════════════════════════════════════════════════════
 // MODEL
@@ -9,8 +10,10 @@ class KontenEdukasiModel {
   final String id;
   final String judul;
   final String deskripsi;
-  final String tipe; // "Artikel" | "Video"
+  final String tipe; // "video" | "artikel"
   final String? thumbnailUrl;
+  final String? urlVideo;
+  final String? isi;
 
   const KontenEdukasiModel({
     required this.id,
@@ -18,18 +21,19 @@ class KontenEdukasiModel {
     required this.deskripsi,
     required this.tipe,
     this.thumbnailUrl,
+    this.urlVideo,
+    this.isi,
   });
 
-// TODO: Uncomment saat API tersedia
-// factory KontenEdukasiModel.fromJson(Map<String, dynamic> json) {
-//   return KontenEdukasiModel(
-//     id: json['id'].toString(),
-//     judul: json['judul'],
-//     deskripsi: json['deskripsi'],
-//     tipe: json['tipe'],
-//     thumbnailUrl: json['thumbnail_url'],
-//   );
-// }
+  factory KontenEdukasiModel.fromJson(Map<String, dynamic> json) =>
+      KontenEdukasiModel(
+        id: json['_id'] ?? '',
+        judul: json['judul'] ?? '',
+        deskripsi: json['deskripsi'] ?? '',
+        tipe: json['tipe'] ?? '',
+        urlVideo: json['url_video'],
+        isi: json['isi'],
+      );
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -51,40 +55,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
   String _tabAktif = "Semua";
   final List<String> _tabs = ["Semua", "Video", "Artikel"];
 
-  // TODO: Hapus data dummy ini saat API sudah tersedia
-  final List<KontenEdukasiModel> _dataDummy = const [
-    KontenEdukasiModel(
-      id: '1',
-      judul: 'Mengenal Tuberkulosis',
-      deskripsi: 'Penjelasan lengkap tentang apa itu TBC, penyebab dan cara penularannya',
-      tipe: 'Artikel',
-    ),
-    KontenEdukasiModel(
-      id: '2',
-      judul: 'Cara Minum Obat TBC yang Benar',
-      deskripsi: 'Tutorial langkah demi langkah mengkonsumsi obat TBC dengan tepat',
-      tipe: 'Video',
-    ),
-    KontenEdukasiModel(
-      id: '3',
-      judul: 'Mitos dan Fakta Seputar TBC',
-      deskripsi: 'Memahami apa saja yang termasuk mitos dan fakta pada TBC',
-      tipe: 'Artikel',
-    ),
-    KontenEdukasiModel(
-      id: '4',
-      judul: 'Pentingnya Nutrisi Untuk Pasien TBC',
-      deskripsi: 'Memahami nutrisi apa saja yang penting untuk pasien Tuberkulosis',
-      tipe: 'Artikel',
-    ),
-    KontenEdukasiModel(
-      id: '5',
-      judul: 'Pencegahan Penularan TBC',
-      deskripsi: 'Tips dan cara mencegah penyebaran TBC ke orang lain',
-      tipe: 'Video',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -93,36 +63,28 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
 
   Future<void> _loadKonten() async {
     setState(() => _isLoading = true);
-
-    // TODO: Ganti dengan pemanggilan API:
-    // try {
-    //   final response = await ApiService.getKontenEdukasi();
-    //   setState(() {
-    //     _semuaKonten = (response as List)
-    //         .map((e) => KontenEdukasiModel.fromJson(e))
-    //         .toList();
-    //   });
-    // } catch (e) {
-    //   // handle error
-    // } finally {
-    //   setState(() => _isLoading = false);
-    //   _filterKonten();
-    // }
-
-    // Sementara pakai data dummy
-    await Future.delayed(const Duration(milliseconds: 300));
-    setState(() {
-      _semuaKonten = _dataDummy;
-      _isLoading = false;
-    });
-    _filterKonten();
+    try {
+      final data = await EdukasiRepository.getKonten();
+      setState(() => _semuaKonten = data);
+      _filterKonten();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat konten: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _filterKonten() {
     setState(() {
       _kontenTerfilter = _tabAktif == "Semua"
           ? _semuaKonten
-          : _semuaKonten.where((k) => k.tipe == _tabAktif).toList();
+          : _semuaKonten
+          .where((k) => k.tipe.toLowerCase() == _tabAktif.toLowerCase())
+          .toList();
     });
   }
 
@@ -134,7 +96,7 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
   void _bukaDetail(KontenEdukasiModel konten) {
     Navigator.pushNamed(
       context,
-      konten.tipe == 'Video'
+      konten.tipe.toLowerCase() == 'video'  // ← tambah .toLowerCase()
           ? AppRoutes.detailVideo
           : AppRoutes.detailArtikel,
       arguments: konten,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/api_services.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -11,6 +13,7 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
 
@@ -164,19 +167,47 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
+                          onPressed: _isLoading ? null : () async {
                             if (_formKey.currentState!.validate()) {
-
-                              // Nanti di sini panggil API reset password
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Link reset dikirim"),
-                                ),
-                              );
+                              setState(() => _isLoading = true);
+                              try {
+                                await ApiService.post(ApiConstants.forgotPassword, {
+                                  "email": _emailController.text.trim(),
+                                });
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Link reset password telah dikirim ke email Anda'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  // Kembali ke login setelah berhasil
+                                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Gagal mengirim link. Coba lagi.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              } finally {
+                                setState(() => _isLoading = false);
+                              }
                             }
                           },
-                          child: const Text(
+                          child: _isLoading
+                              ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                              : const Text(
                             "Kirim Link Reset",
                             style: TextStyle(color: Colors.white),
                           ),

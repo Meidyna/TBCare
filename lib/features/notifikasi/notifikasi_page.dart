@@ -1,40 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../services/notification_service.dart'; // ← import service
 
 // ════════════════════════════════════════════════════════════════
-// MODEL
+// CATATAN: NotifikasiModel sekarang ada di notification_service.dart
+// Hapus class NotifikasiModel dari file ini jika sebelumnya ada di sini
 // ════════════════════════════════════════════════════════════════
-class NotifikasiModel {
-  final String id;
-  final String judul;
-  final String pesan;
-  final String waktu;
-  bool sudahDibaca;
 
-  NotifikasiModel({
-    required this.id,
-    required this.judul,
-    required this.pesan,
-    required this.waktu,
-    this.sudahDibaca = false,
-  });
-
-// TODO: Uncomment saat API tersedia
-// factory NotifikasiModel.fromJson(Map<String, dynamic> json) {
-//   return NotifikasiModel(
-//     id: json['id'].toString(),
-//     judul: json['judul'],
-//     pesan: json['pesan'],
-//     waktu: json['waktu'],
-//     sudahDibaca: json['sudah_dibaca'] ?? false,
-//   );
-// }
-}
-
-// ════════════════════════════════════════════════════════════════
-// PAGE
-// ════════════════════════════════════════════════════════════════
 class NotifikasiPage extends StatefulWidget {
   const NotifikasiPage({super.key});
 
@@ -44,34 +17,11 @@ class NotifikasiPage extends StatefulWidget {
 
 class _NotifikasiPageState extends State<NotifikasiPage> {
 
-  // ── State ────────────────────────────────────────────────────
   List<NotifikasiModel> _semuaNotifikasi = [];
   bool _isLoading = false;
-
-  /// Tab aktif: "Semua" | "Belum Dibaca"
   String _tabAktif = "Semua";
   final List<String> _tabs = ["Semua", "Belum Dibaca"];
 
-  // ── Data dummy sementara ─────────────────────────────────────
-  // TODO: Hapus data dummy ini saat API tersedia
-  final List<NotifikasiModel> _dataDummy = [
-    NotifikasiModel(
-      id: '1',
-      judul: 'Waktunya Minum Obat',
-      pesan: 'Rifampisin 450mg - Jangan lupa minum obat sesuai jadwal',
-      waktu: '2 Jam yang lalu',
-      sudahDibaca: false,
-    ),
-    NotifikasiModel(
-      id: '2',
-      judul: 'Obat Diminum',
-      pesan: 'Anda telah menyelesaikan dosis pagi hari ini. Lanjutkan!',
-      waktu: '2 Hari yang lalu',
-      sudahDibaca: true,
-    ),
-  ];
-
-  // ── Getters ──────────────────────────────────────────────────
   List<NotifikasiModel> get _notifikasiTerfilter {
     if (_tabAktif == "Belum Dibaca") {
       return _semuaNotifikasi.where((n) => !n.sudahDibaca).toList();
@@ -82,7 +32,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   int get _jumlahBelumDibaca =>
       _semuaNotifikasi.where((n) => !n.sudahDibaca).length;
 
-  // ── Lifecycle ────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -90,55 +39,31 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   }
 
   // ════════════════════════════════════════════════════════════
-  // FUNGSI
+  // FUNGSI — semua pakai NotificationService (SharedPreferences)
   // ════════════════════════════════════════════════════════════
 
   Future<void> _loadNotifikasi() async {
     setState(() => _isLoading = true);
-
-    // TODO: Ganti dengan pemanggilan API:
-    // try {
-    //   final response = await ApiService.getNotifikasi();
-    //   setState(() {
-    //     _semuaNotifikasi = (response as List)
-    //         .map((e) => NotifikasiModel.fromJson(e))
-    //         .toList();
-    //   });
-    // } catch (e) {
-    //   // handle error
-    // } finally {
-    //   setState(() => _isLoading = false);
-    // }
-
-    // Sementara pakai data dummy
-    // TODO: Hapus simulasi ini saat API tersedia
-    await Future.delayed(const Duration(milliseconds: 300));
+    final data = await NotificationService.getHistory();
     setState(() {
-      _semuaNotifikasi = _dataDummy;
+      _semuaNotifikasi = data;
       _isLoading = false;
     });
   }
 
-  /// Tandai satu notifikasi sebagai sudah dibaca
-  void _tandaiDibaca(NotifikasiModel notif) {
-    setState(() => notif.sudahDibaca = true);
-    // TODO: await ApiService.tandaiDibaca(notif.id);
+  Future<void> _tandaiDibaca(NotifikasiModel notif) async {
+    await NotificationService.tandaiDibaca(notif.id);
+    await _loadNotifikasi(); // refresh
   }
 
-  /// Tandai semua notifikasi sebagai sudah dibaca
-  void _tandaiSemuaDibaca() {
-    setState(() {
-      for (final n in _semuaNotifikasi) {
-        n.sudahDibaca = true;
-      }
-    });
-    // TODO: await ApiService.tandaiSemuaDibaca();
+  Future<void> _tandaiSemuaDibaca() async {
+    await NotificationService.tandaiSemuaDibaca();
+    await _loadNotifikasi(); // refresh
   }
 
-  /// Hapus satu notifikasi
-  void _hapusNotifikasi(NotifikasiModel notif) {
-    setState(() => _semuaNotifikasi.removeWhere((n) => n.id == notif.id));
-    // TODO: await ApiService.hapusNotifikasi(notif.id);
+  Future<void> _hapusNotifikasi(NotifikasiModel notif) async {
+    await NotificationService.hapusDariHistory(notif.id);
+    await _loadNotifikasi(); // refresh
   }
 
   void _gantiTab(String tab) => setState(() => _tabAktif = tab);
@@ -157,7 +82,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
     final double tabTopOffset = headerTotal - 24.0;
-    // Tab bar vertikal ~96px (2 item x 44px + padding), separuh overlap = 24
     const double listPaddingTop = 24.0 + 80.0;
 
     return Scaffold(
@@ -165,34 +89,33 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       body: Stack(
         children: [
 
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: tabTopOffset,
             left: 0, right: 0, bottom: 0,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView(
-              padding: EdgeInsets.fromLTRB(
-                  width * 0.05, listPaddingTop, width * 0.05, 0),
-              children: [
-                if (_notifikasiTerfilter.isEmpty)
-                  _buildEmpty()
-                else
-                  ..._notifikasiTerfilter
-                      .map((n) => _buildKartuNotifikasi(width, n)),
-
-                SizedBox(height: height * 0.1),
-              ],
+                : RefreshIndicator( // ← tarik ke bawah untuk refresh
+              onRefresh: _loadNotifikasi,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                    width * 0.05, listPaddingTop, width * 0.05, 0),
+                children: [
+                  if (_notifikasiTerfilter.isEmpty)
+                    _buildEmpty()
+                  else
+                    ..._notifikasiTerfilter
+                        .map((n) => _buildKartuNotifikasi(width, n)),
+                  SizedBox(height: height * 0.1),
+                ],
+              ),
             ),
           ),
 
-          /// ── TAB BAR MENGAMBANG ──────────────────────────────
           Positioned(
             top: tabTopOffset,
             left: width * 0.05,
@@ -205,7 +128,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   }
 
   // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
+  // WIDGET BUILDERS — sama persis dengan sebelumnya
   // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
@@ -222,7 +145,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tombol back ke beranda
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.home),
@@ -230,8 +152,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
             constraints: const BoxConstraints(),
           ),
           SizedBox(width: width * 0.02),
-
-          // Judul + subjudul
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -256,14 +176,11 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
               ],
             ),
           ),
-
-          // Tombol Tandai Semua
           if (_jumlahBelumDibaca > 0)
             GestureDetector(
               onTap: _tandaiSemuaDibaca,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -291,7 +208,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     );
   }
 
-  /// Tab bar Semua / Belum Dibaca — mengambang dengan shadow, susunan atas bawah
   Widget _buildTabBar() {
     return Container(
       decoration: BoxDecoration(
@@ -309,13 +225,9 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       child: Column(
         children: _tabs.map((tab) {
           final isAktif = _tabAktif == tab;
-
-          String labelTeks;
-          if (tab == "Semua") {
-            labelTeks = 'Semua (${_semuaNotifikasi.length})';
-          } else {
-            labelTeks = 'Belum Dibaca ($_jumlahBelumDibaca)';
-          }
+          final labelTeks = tab == "Semua"
+              ? 'Semua (${_semuaNotifikasi.length})'
+              : 'Belum Dibaca ($_jumlahBelumDibaca)';
 
           return GestureDetector(
             onTap: () => _gantiTab(tab),
@@ -324,9 +236,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: isAktif
-                    ? AppTheme.buttonBackground
-                    : Colors.transparent,
+                color: isAktif ? AppTheme.buttonBackground : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -334,8 +244,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight:
-                  isAktif ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isAktif ? FontWeight.bold : FontWeight.normal,
                   color: isAktif ? Colors.white : Colors.black54,
                 ),
               ),
@@ -346,7 +255,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     );
   }
 
-  /// Tampilan saat tidak ada notifikasi
   Widget _buildEmpty() {
     return Container(
       width: double.infinity,
@@ -375,7 +283,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     );
   }
 
-  /// Kartu satu notifikasi
   Widget _buildKartuNotifikasi(double width, NotifikasiModel notif) {
     final belumDibaca = !notif.sudahDibaca;
 
@@ -383,11 +290,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(width * 0.04),
       decoration: BoxDecoration(
-        // Belum dibaca: biru muda #71D6F5 opacity 20%
-        // Sudah dibaca: putih
-        color: belumDibaca
-            ? const Color(0x3371D6F5)
-            : Colors.white,
+        color: belumDibaca ? const Color(0x3371D6F5) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: belumDibaca
@@ -405,60 +308,51 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ── Ikon notifikasi ───────────────────────────────
+          // Ikon berbeda berdasarkan jenis notifikasi
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE8824A),
+            decoration: BoxDecoration(
+              color: notif.judul.contains('Diminum')
+                  ? AppTheme.buttonBackground  // hijau untuk konfirmasi
+                  : const Color(0xFFE8824A),   // oranye untuk pengingat
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.medication_rounded,
+            child: Icon(
+              notif.judul.contains('Diminum')
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.medication_rounded,
               color: Colors.white,
               size: 20,
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // ── Konten ────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Judul
                 Text(
                   notif.judul,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
-                // Pesan
                 Text(
                   notif.pesan,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    height: 1.4,
-                  ),
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      height: 1.4),
                 ),
                 const SizedBox(height: 8),
-                // Waktu + aksi
                 Row(
                   children: [
                     Text(
-                      notif.waktu,
+                      notif.waktuRelatif, // ← pakai getter waktuRelatif
                       style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade400,
-                      ),
+                          fontSize: 11, color: Colors.grey.shade400),
                     ),
                     const Spacer(),
-                    // Tombol "Tandai Dibaca" hanya untuk yang belum dibaca
                     if (belumDibaca) ...[
                       GestureDetector(
                         onTap: () => _tandaiDibaca(notif),
@@ -473,16 +367,14 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                       ),
                       const SizedBox(width: 12),
                     ],
-                    // Tombol Hapus
                     GestureDetector(
                       onTap: () => _hapusNotifikasi(notif),
                       child: const Text(
                         'Hapus',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
+                            fontSize: 12,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],

@@ -1,6 +1,7 @@
 import '../core/constants/api_constants.dart';
 import '../models/obat_model.dart';
 import '../services/api_services.dart';
+import '../services/notification_service.dart';
 
 class ObatRepository {
   // Ambil jadwal hari ini
@@ -20,23 +21,52 @@ class ObatRepository {
       "dosis": dosis,
       "waktu_minum": waktuMinum,
     });
-    return ObatModel.fromJson(res['data']);
+
+    final obat = ObatModel.fromJson(res['data']);
+
+    for (final waktu in waktuMinum) {
+      await NotificationService.jadwalkanNotifikasiObat(
+        obatId: obat.id,
+        namaObat: namaObat,
+        dosis: dosis,
+        waktuMinum: waktu,
+      );
+
+      await NotificationService.catatJadwalKeHistory(
+        obatId: obat.id,
+        namaObat: namaObat,
+        dosis: dosis,
+        waktuMinum: waktu,
+      );
+    }
+
+    return obat;
   }
 
   // Hapus obat
-  static Future<void> hapusObat(String idObat) async {
+  static Future<void> hapusObat(String idObat, List<String> waktuMinum) async {
     final endpoint = ApiConstants.deleteObat.replaceAll(':id', idObat);
     await ApiService.delete(endpoint);
+
+    // ← Batalkan semua notifikasi obat ini
+    await NotificationService.batalkanNotifikasiObat(
+      obatId: idObat,
+      waktuMinum: waktuMinum,
+    );
   }
 
   // Konfirmasi minum obat
-  static Future<void> konfirmasiMinum(String idObat) async {
+  static Future<void> konfirmasiMinum(String idObat, String namaObat) async {
     final now = DateTime.now();
     final tanggal =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
     await ApiService.post(ApiConstants.konfirmasiObat, {
       "id_obat": idObat,
       "tanggal": tanggal,
     });
+
+    // ← Tampilkan notifikasi konfirmasi
+    await NotificationService.tampilkanNotifikasiDiminum(namaObat);
   }
 }

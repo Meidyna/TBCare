@@ -4,6 +4,7 @@ import '../../core/navigation/app_routes.dart';
 import '../../core/session/user_session.dart';
 import '../../repositories/obat_repository.dart';
 import '../../models/obat_model.dart';
+import '../../services/notification_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +14,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool hasNotification = true;
+  bool hasNotification = false;
 
   // ← Data jadwal dari API
   ObatModel? _obatBerikutnya;
@@ -25,23 +26,38 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadJadwal();
+    _cekNotifikasi();
   }
 
   Future<void> _loadJadwal() async {
     setState(() => _isLoadingJadwal = true);
     try {
       final jadwal = await ObatRepository.getJadwalHariIni();
-      setState(() {
-        // Ambil obat pertama yang belum diminum
-        _obatBerikutnya = jadwal.obatBerikutnya.isNotEmpty
-            ? jadwal.obatBerikutnya.first
-            : null;
+
+      if (jadwal.obatBerikutnya.isEmpty) {
+        setState(() => _obatBerikutnya = null);
+        return;
+      }
+
+      final obatList = jadwal.obatBerikutnya;
+      obatList.sort((a, b) {
+        final jamA = a.waktuMinum.isNotEmpty ? a.waktuMinum.first : '99:99';
+        final jamB = b.waktuMinum.isNotEmpty ? b.waktuMinum.first : '99:99';
+        return jamA.compareTo(jamB);
       });
+
+      setState(() => _obatBerikutnya = obatList.first);
     } catch (e) {
       setState(() => _obatBerikutnya = null);
     } finally {
       setState(() => _isLoadingJadwal = false);
     }
+  }
+
+  Future<void> _cekNotifikasi() async {
+    final list = await NotificationService.getHistory();
+    final adaBelumDibaca = list.any((n) => !n.sudahDibaca);
+    setState(() => hasNotification = adaBelumDibaca);
   }
 
   @override
@@ -88,7 +104,10 @@ class _HomePageState extends State<HomePage> {
         children: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.notifikasi),
+            onPressed: () async {
+              await Navigator.pushNamed(context, AppRoutes.notifikasi);
+              _cekNotifikasi();
+            },
           ),
           if (hasNotification)
             Positioned(

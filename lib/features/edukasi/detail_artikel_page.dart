@@ -2,105 +2,10 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'konten_edukasi_page.dart';
 
-class DetailArtikelPage extends StatefulWidget {
+class DetailArtikelPage extends StatelessWidget {
   final KontenEdukasiModel konten;
 
   const DetailArtikelPage({super.key, required this.konten});
-
-  @override
-  State<DetailArtikelPage> createState() => _DetailArtikelPageState();
-}
-
-class _DetailArtikelPageState extends State<DetailArtikelPage> {
-
-  bool _isLoading = false;
-
-  /// TODO: Ganti dengan widget.konten.isiLengkap dari API
-  String get _isiArtikel {
-    return _dummyIsi[widget.konten.id] ??
-        'Konten artikel ini akan segera tersedia. '
-            'Silakan cek kembali nanti.';
-  }
-
-  // TODO: Hapus seluruh map ini saat API tersedia
-  static const Map<String, String> _dummyIsi = {
-    '1': '''Tuberkulosis (TBC) adalah penyakit menular yang disebabkan oleh bakteri Mycobacterium tuberculosis. Penyakit ini terutama menyerang paru-paru, namun dapat juga menyerang organ lain.
-
-Penyebab TBC:
-• Bakteri Mycobacterium tuberculosis
-• Menyebar melalui udara saat penderita batuk, bersin, atau berbicara
-
-Cara Penularan:
-• Menghirup percikan dahak (droplet) penderita TBC aktif
-• Kontak erat dengan penderita dalam waktu lama
-• Sistem imun lemah meningkatkan risiko tertular
-
-Gejala Umum:
-• Batuk lebih dari 2 minggu
-• Batuk berdarah
-• Demam dan keringat malam
-• Penurunan berat badan
-• Kelelahan berkepanjangan
-
-Pencegahan:
-• Vaksinasi BCG sejak bayi
-• Ventilasi ruangan yang baik
-• Penggunaan masker di area berisiko
-• Menyelesaikan pengobatan TBC hingga tuntas''',
-
-    '3': '''Banyak mitos yang beredar di masyarakat tentang TBC. Penting untuk memahami mana yang fakta dan mana yang mitos.
-
-MITOS vs FAKTA:
-
-Mitos: TBC hanya menyerang orang miskin
-Fakta: TBC dapat menyerang siapa saja tanpa memandang status ekonomi
-
-Mitos: TBC tidak bisa disembuhkan
-Fakta: TBC dapat sembuh total jika pengobatan dilakukan secara teratur selama 6 bulan
-
-Mitos: Penderita TBC harus diisolasi selamanya
-Fakta: Setelah 2 minggu pengobatan, penderita umumnya sudah tidak menular
-
-Mitos: TBC hanya menyerang paru-paru
-Fakta: TBC dapat menyerang tulang, kelenjar, ginjal, dan organ lain
-
-Mitos: Batuk darah selalu berarti TBC
-Fakta: Batuk darah bisa disebabkan berbagai kondisi, perlu pemeriksaan dokter''',
-
-    '4': '''Nutrisi yang baik sangat penting bagi pasien TBC karena membantu memperkuat sistem imun dan mempercepat pemulihan.
-
-Nutrisi Penting untuk Pasien TBC:
-
-1. Protein Tinggi
-• Telur, ikan, daging tanpa lemak
-• Kacang-kacangan dan tahu/tempe
-• Membantu memperbaiki jaringan tubuh
-
-2. Vitamin dan Mineral
-• Vitamin A: Wortel, bayam, ubi
-• Vitamin C: Jeruk, jambu, tomat
-• Vitamin D: Ikan, telur, sinar matahari
-• Zinc: Daging, biji-bijian
-
-3. Karbohidrat Kompleks
-• Nasi merah, oat, roti gandum
-• Memberikan energi tahan lama
-
-4. Lemak Sehat
-• Alpukat, kacang-kacangan
-• Minyak zaitun
-
-Yang Harus Dihindari:
-• Alkohol
-• Rokok
-• Makanan tinggi gula
-• Makanan olahan berlebihan
-
-Tips:
-• Makan porsi kecil tapi sering
-• Minum air putih 8-10 gelas/hari
-• Hindari makanan yang mengiritasi lambung''',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +15,7 @@ Tips:
 
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
-    const double cardOverlap = 28.0;
+    const double cardOverlap = 20.0;
     final double cardTopOffset = headerTotal - cardOverlap;
 
     return Scaffold(
@@ -121,38 +26,25 @@ Tips:
           /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
-            child: _buildHeader(width, headerTotal, topPadding),
+            child: _buildHeader(context, width, headerTotal, topPadding),
           ),
 
           /// ── KONTEN SCROLL ──────────────────────────────────
-          /// Dimulai dari cardTopOffset, padding atas = sisa card di bawah
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                width * 0.05,
-                0, // card langsung dari atas, overlap ke header
-                width * 0.05,
-                32,
-              ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(width * 0.05, 0, width * 0.05, 32),
               child: _buildCardUtama(width),
             ),
           ),
-
-
         ],
       ),
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
-
-  Widget _buildHeader(double width, double headerTotal, double topPadding) {
+  Widget _buildHeader(BuildContext context, double width,
+      double headerTotal, double topPadding) {
     return Container(
       height: headerTotal,
       width: width,
@@ -175,14 +67,14 @@ Tips:
           SizedBox(width: width * 0.02),
           Expanded(
             child: Text(
-              widget.konten.judul,
+              konten.judul,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: width * 0.045,
                 fontWeight: FontWeight.bold,
-                height: 2.2,
+                height: 1.5,
               ),
             ),
           ),
@@ -191,7 +83,6 @@ Tips:
     );
   }
 
-  /// Satu card berisi: info judul + badge + divider + isi artikel
   Widget _buildCardUtama(double width) {
     return Container(
       width: double.infinity,
@@ -234,7 +125,7 @@ Tips:
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.konten.judul,
+                      konten.judul,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -242,7 +133,6 @@ Tips:
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Badge tipe
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
@@ -251,7 +141,7 @@ Tips:
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        widget.konten.tipe,
+                        konten.tipe,
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.buttonBackground,
@@ -266,25 +156,23 @@ Tips:
           ),
 
           const SizedBox(height: 16),
-
-          // ── Divider pemisah judul & isi ──────────────────────
           Divider(color: Colors.grey.shade100, thickness: 1),
-
           const SizedBox(height: 12),
 
-          // ── Isi artikel ──────────────────────────────────────
+          // ── Isi artikel dari API ──────────────────────────────
           _buildIsiArtikel(width),
         ],
       ),
     );
   }
 
-  /// Render isi artikel dengan formatting per baris
   Widget _buildIsiArtikel(double width) {
-    final paragrafList = _isiArtikel
-        .split('\n')
-        .map((e) => e.trim())
-        .toList();
+    // ← Gunakan isi dari API, fallback ke deskripsi jika isi null
+    final isi = (konten.isi != null && konten.isi!.isNotEmpty)
+        ? konten.isi!
+        : konten.deskripsi;
+
+    final paragrafList = isi.split('\n').map((e) => e.trim()).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

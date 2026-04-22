@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/notification_service.dart';
 
 // ════════════════════════════════════════════════════════════════
 // PENGATURAN PAGE
@@ -17,18 +19,48 @@ class _PengaturanPageState extends State<PengaturanPage> {
   bool _pengingat = true;
   bool _suara     = true;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadPengaturan();
+  }
+
+  Future<void> _loadPengaturan() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _pengingat = prefs.getBool('pengingat_obat') ?? true;
+      _suara = prefs.getBool('suara_notifikasi') ?? true;
+    });
+  }
+
   // ════════════════════════════════════════════════════════════
   // FUNGSI
   // ════════════════════════════════════════════════════════════
 
-  void _ubahPengingat(bool nilai) {
+  Future<void> _ubahPengingat(bool nilai) async {
     setState(() => _pengingat = nilai);
-    // TODO: await ApiService.updatePengaturan(pengingatObat: nilai);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('pengingat_obat', nilai);
+
+    if (!nilai) {
+      // ← Matikan semua notifikasi terjadwal
+      await NotificationService.batalkanSemuaNotifikasi();
+    } else {
+      // ← Hidupkan kembali — user perlu tambah obat lagi
+      // atau kita bisa reschedule dari data jadwal
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pengingat aktif. Notifikasi akan muncul sesuai jadwal obat.'),
+        ),
+      );
+    }
   }
 
-  void _ubahSuara(bool nilai) {
+  Future<void> _ubahSuara(bool nilai) async {
     setState(() => _suara = nilai);
-    // TODO: await ApiService.updatePengaturan(suaraNotifikasi: nilai);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('suara_notifikasi', nilai);
+    // Suara akan dipakai saat notifikasi berikutnya dijadwalkan
   }
 
   void _ubahKataSandi() {
@@ -260,7 +292,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
             ],
           ),
         ),
-        // ✅ Garis pemisah antar item toggle
         if (showDivider)
           Divider(
             height: 1,
