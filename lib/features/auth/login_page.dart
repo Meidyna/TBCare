@@ -6,6 +6,7 @@ import '../../core/session/user_session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../services/api_services.dart';
+import '../../services/notification_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -97,6 +98,10 @@ class _LoginPageState extends State<LoginPage> {
 
                     TextFormField(
                       controller: _emailController,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      textCapitalization: TextCapitalization.none,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: "nama@email.com",
                         prefixIcon: const Icon(Icons.email_outlined),
@@ -141,6 +146,8 @@ class _LoginPageState extends State<LoginPage> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      autocorrect: false,
+                      enableSuggestions: false,
                       decoration: InputDecoration(
                         hintText: "Masukkan kata sandi",
                         prefixIcon: const Icon(Icons.lock_outline),
@@ -227,8 +234,7 @@ class _LoginPageState extends State<LoginPage> {
                             );
 
                             final token = response['data']['token'];
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('token', token);
+                            await UserSession.simpanToken(token);
                             final profileResponse = await ApiService.get(ApiConstants.getProfile);
                             final profileData = profileResponse['data'];
 
@@ -239,6 +245,7 @@ class _LoginPageState extends State<LoginPage> {
                               token: token,
                             );
 
+                            await NotificationService.mintaIzin();
                             Navigator.pushNamedAndRemoveUntil(
                               context,
                               AppRoutes.home,

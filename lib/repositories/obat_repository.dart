@@ -48,11 +48,16 @@ class ObatRepository {
     final endpoint = ApiConstants.deleteObat.replaceAll(':id', idObat);
     await ApiService.delete(endpoint);
 
-    // ← Batalkan semua notifikasi obat ini
-    await NotificationService.batalkanNotifikasiObat(
-      obatId: idObat,
-      waktuMinum: waktuMinum,
-    );
+    try {
+      // ← Batalkan notifikasi
+      await NotificationService.batalkanNotifikasiObat(
+        obatId: idObat,
+        waktuMinum: waktuMinum,
+      );
+    } catch (e) {
+      // ← Abaikan error pembatalan notifikasi
+      // Error ini dari Android saat format notifikasi tidak cocok
+    }
   }
 
   // Konfirmasi minum obat

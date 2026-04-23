@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/navigation/app_routes.dart';
@@ -106,15 +107,21 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   Future<void> _prosesLogout() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
       await ApiService.post(ApiConstants.logout, {});
     } catch (e) {}
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('foto_profil_${UserSession.email}');
-
     await NotificationService.hapusSemuaHistory();
     await NotificationService.batalkanSemuaNotifikasi();
+    await UserSession.hapusToken();
     UserSession.hapus();
 
     if (mounted) {

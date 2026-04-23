@@ -35,7 +35,8 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
 
     try {
       // Gabungkan baseUrl + path video
-      final videoUrl = '${ApiConstants.baseUrl}${widget.konten.urlVideo}';
+      final videoUrl = widget.konten.urlVideo!;
+      debugPrint('VIDEO URL: $videoUrl');
       _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
       await _controller!.initialize();
       setState(() => _isLoading = false);

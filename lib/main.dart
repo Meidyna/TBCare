@@ -5,8 +5,10 @@ import 'package:tbcare/features/edukasi/detail_video_page.dart';
 import 'package:tbcare/features/edukasi/konten_edukasi_page.dart';
 import 'package:tbcare/features/jadwal/jadwal_page.dart';
 import 'package:tbcare/features/layanan/layanan_kesehatan_page.dart';
+import 'package:tbcare/repositories/profil_repository.dart';
 import 'package:tbcare/services/api_services.dart';
 import 'package:tbcare/services/notification_service.dart';
+import 'core/session/user_session.dart';
 import 'features/splash/splash_page.dart';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_routes.dart';
@@ -33,15 +35,14 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: AppRoutes.splash,
+      home: const _SplashRouter(),
       routes: {
-        AppRoutes.splash: (context) => const SplashPage(),
         AppRoutes.login: (context) => const LoginPage(),
         AppRoutes.forgotPassword: (context) => const ForgotPasswordPage(),
         AppRoutes.register: (context) => const RegisterPage(),
@@ -67,5 +68,62 @@ class MyApp extends StatelessWidget {
         AppRoutes.panduanPengguna: (context) => const PanduanPenggunaPage(),
       },
     );
+  }
+}
+
+class _SplashRouter extends StatefulWidget {
+  const _SplashRouter();
+
+  @override
+  State<_SplashRouter> createState() => _SplashRouterState();
+}
+
+class _SplashRouterState extends State<_SplashRouter> {
+  @override
+  void initState() {
+    super.initState();
+    _cekSession();
+  }
+
+  Future<void> _cekSession() async {
+    await Future.delayed(const Duration(seconds: 2)); // tampilkan splash dulu
+
+    final token = await UserSession.loadToken();
+
+    if (token != null && token.isNotEmpty) {
+      // ← Token ada, set ke UserSession lalu load profil
+      UserSession.simpan(
+        nama: '',
+        email: '',
+        telepon: '',
+        token: token,
+      );
+
+      try {
+        await ProfilRepository.getProfile();
+      } catch (e) {
+        // Token expired atau error → ke login
+        await UserSession.hapusToken();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+        }
+        return;
+      }
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } else {
+      // Tidak ada token → ke login
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Tampilkan splash page selama cek session
+    return const SplashPage();
   }
 }

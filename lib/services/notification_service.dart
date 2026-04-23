@@ -1,14 +1,18 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
-
 import '../core/session/user_session.dart';
 
 // ════════════════════════════════════════════════════════════════
-// MODEL HISTORY NOTIFIKASI (disimpan ke SharedPreferences)
+// TOP-LEVEL FUNCTION — wajib ada untuk background notification
+// ════════════════════════════════════════════════════════════════
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse details) {}
+
+// ════════════════════════════════════════════════════════════════
+// MODEL HISTORY NOTIFIKASI
 // ════════════════════════════════════════════════════════════════
 class NotifikasiModel {
   final String id;
@@ -42,7 +46,6 @@ class NotifikasiModel {
         sudahDibaca: json['sudahDibaca'] ?? false,
       );
 
-  /// Format waktu relatif untuk ditampilkan di UI
   String get waktuRelatif {
     final selisih = DateTime.now().difference(waktu);
     if (selisih.inMinutes < 1) return 'Baru saja';
@@ -62,13 +65,12 @@ class NotificationService {
 
   static String get _prefKey => 'history_notifikasi_${UserSession.email}';
 
-  // ── Channel Android ──────────────────────────────────────────
   static const AndroidNotificationChannel _channelJadwal =
   AndroidNotificationChannel(
     'jadwal_obat_channel',
     'Jadwal Minum Obat',
     description: 'Pengingat waktu minum obat sesuai jadwal',
-    importance: Importance.high,
+    importance: Importance.max,
     playSound: true,
     enableVibration: true,
   );
@@ -81,11 +83,10 @@ class NotificationService {
     importance: Importance.defaultImportance,
   );
 
-  // ════════════════════════════════════════════════════════════
-  // INIT — panggil di main() sebelum runApp
-  // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════════════════════
   static Future<void> init() async {
-    // Setup timezone (wajib untuk zonedSchedule)
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
@@ -95,35 +96,44 @@ class NotificationService {
     const InitializationSettings settings =
     InitializationSettings(android: androidSettings);
 
-    await _plugin.initialize(settings);
+    // ← Tambah background handler
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (details) {},
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    );
 
-    // Buat channel di Android
-    final androidPlugin =
-    _plugin.resolvePlatformSpecificImplementation<
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
     await androidPlugin?.createNotificationChannel(_channelJadwal);
     await androidPlugin?.createNotificationChannel(_channelKonfirmasi);
-
-    // Minta izin notifikasi (Android 13+)
     await androidPlugin?.requestNotificationsPermission();
     await androidPlugin?.requestExactAlarmsPermission();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // JADWALKAN NOTIFIKASI — dipanggil saat user tambah obat
-  // Muncul setiap hari pada jam yang ditentukan
-  // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // MINTA IZIN — panggil setelah login
+  // ════════════════════════════════════════════════════════
+  static Future<void> mintaIzin() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.requestExactAlarmsPermission();
+  }
+
+  // ════════════════════════════════════════════════════════
+  // JADWALKAN NOTIFIKASI
+  // ════════════════════════════════════════════════════════
   static Future<void> jadwalkanNotifikasiObat({
     required String obatId,
     required String namaObat,
     required String dosis,
     required String waktuMinum,
   }) async {
-    // ← Cek apakah pengingat aktif
     final prefs = await SharedPreferences.getInstance();
     final pengingatAktif = prefs.getBool('pengingat_obat') ?? true;
-    if (!pengingatAktif) return; // ← jangan jadwalkan kalau dimatikan
+    if (!pengingatAktif) return;
 
     final suaraAktif = prefs.getBool('suara_notifikasi') ?? true;
 
@@ -150,10 +160,10 @@ class NotificationService {
           _channelJadwal.id,
           _channelJadwal.name,
           channelDescription: _channelJadwal.description,
-          importance: Importance.high,
+          importance: Importance.max,
           priority: Priority.high,
-          playSound: suaraAktif,      // ← suara sesuai setting
-          enableVibration: suaraAktif, // ← getar sesuai setting
+          playSound: suaraAktif,
+          enableVibration: suaraAktif,
           styleInformation: BigTextStyleInformation(
             '$namaObat $dosis — Jangan lupa minum obat sesuai jadwal',
           ),
@@ -161,16 +171,15 @@ class NotificationService {
       ),
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // ← inexact lebih kompatibel
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // NOTIFIKASI LANGSUNG — dipanggil saat user tekan "Minum"
-  // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // NOTIFIKASI LANGSUNG
+  // ════════════════════════════════════════════════════════
   static Future<void> tampilkanNotifikasiDiminum(String namaObat) async {
-    // ID unik berdasarkan timestamp agar tidak tabrakan
     final id = DateTime.now().millisecondsSinceEpoch % 100000;
 
     await _plugin.show(
@@ -187,7 +196,6 @@ class NotificationService {
       ),
     );
 
-    // Simpan ke history
     await _simpanKeHistory(NotifikasiModel(
       id: 'diminum_$id',
       judul: 'Obat Diminum',
@@ -197,12 +205,12 @@ class NotificationService {
     ));
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BATALKAN NOTIFIKASI — dipanggil saat obat dihapus
-  // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
+  // BATALKAN NOTIFIKASI
+  // ════════════════════════════════════════════════════════
   static Future<void> batalkanNotifikasiObat({
     required String obatId,
-    required List<String> waktuMinum, // semua slot waktu obat terseut
+    required List<String> waktuMinum,
   }) async {
     for (final waktu in waktuMinum) {
       final notifId = _buatNotifId(obatId, waktu);
@@ -210,104 +218,77 @@ class NotificationService {
     }
   }
 
-  // Batalkan SEMUA notifikasi terjadwal
   static Future<void> batalkanSemuaNotifikasi() async {
     await _plugin.cancelAll();
   }
 
-// Cek apakah suara aktif
   static Future<bool> isSuaraAktif() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('suara_notifikasi') ?? true;
   }
 
-  // ════════════════════════════════════════════════════════════
-  // HISTORY NOTIFIKASI — disimpan ke SharedPreferences
-  // ════════════════════════════════════════════════════════════
-
-  /// Simpan notifikasi baru ke history (maks 50 item)
+  // ════════════════════════════════════════════════════════
+  // HISTORY NOTIFIKASI
+  // ════════════════════════════════════════════════════════
   static Future<void> _simpanKeHistory(NotifikasiModel notif) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
-
-    // Tambahkan di depan (terbaru duluan)
     raw.insert(0, jsonEncode(notif.toJson()));
-
-    // Batasi 50 item
     if (raw.length > 50) raw.removeRange(50, raw.length);
-
     await prefs.setStringList(_prefKey, raw);
   }
 
-  /// Ambil semua history notifikasi
   static Future<List<NotifikasiModel>> getHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
-    return raw
-        .map((e) => NotifikasiModel.fromJson(jsonDecode(e)))
-        .toList();
+    return raw.map((e) => NotifikasiModel.fromJson(jsonDecode(e))).toList();
   }
 
-  /// Tandai satu notifikasi sebagai sudah dibaca
   static Future<void> tandaiDibaca(String notifId) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
-
     final updated = raw.map((e) {
       final map = jsonDecode(e) as Map<String, dynamic>;
       if (map['id'] == notifId) map['sudahDibaca'] = true;
       return jsonEncode(map);
     }).toList();
-
     await prefs.setStringList(_prefKey, updated);
   }
 
-  /// Tandai semua sebagai sudah dibaca
   static Future<void> tandaiSemuaDibaca() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
-
     final updated = raw.map((e) {
       final map = jsonDecode(e) as Map<String, dynamic>;
       map['sudahDibaca'] = true;
       return jsonEncode(map);
     }).toList();
-
     await prefs.setStringList(_prefKey, updated);
   }
 
-  /// Hapus satu notifikasi dari history
   static Future<void> hapusDariHistory(String notifId) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
-
     raw.removeWhere((e) {
       final map = jsonDecode(e) as Map<String, dynamic>;
       return map['id'] == notifId;
     });
-
     await prefs.setStringList(_prefKey, raw);
   }
 
-  // Hapus semua history notifikasi user ini
   static Future<void> hapusSemuaHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefKey);
   }
 
-  // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════
   // HELPER
-  // ════════════════════════════════════════════════════════════
-
-  /// Buat notification ID (int) dari obatId + waktu
-  /// Contoh: obatId="abc123", waktu="20:00" → hash unik
+  // ════════════════════════════════════════════════════════
   static int _buatNotifId(String obatId, String waktu) {
     final gabung = '$obatId-$waktu';
-    return gabung.hashCode.abs() % 2147483647; // max int32
+    return gabung.hashCode.abs() % 2147483647;
   }
 
-  /// Panggil ini saat jadwalkan notif agar history juga tersimpan
-  /// (opsional — history pengingat dicatat saat notif dijadwalkan)
   static Future<void> catatJadwalKeHistory({
     required String obatId,
     required String namaObat,

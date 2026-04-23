@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class UserSession {
   UserSession._();
 
@@ -27,11 +29,30 @@ class UserSession {
     _fotoPath = fotoPath;
   }
 
+  // ← Simpan token ke SharedPreferences
+  static Future<void> simpanToken(String token) async {
+    _token = token;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+  }
+
+  // ← Load token dari SharedPreferences
+  static Future<String?> loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
   static void hapus() {
     _nama = '';
     _email = '';
     _telepon = '';
     _token = '';
     _fotoPath = '';
+  }
+
+  // ← Hapus token dari SharedPreferences
+  static Future<void> hapusToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
   }
 }

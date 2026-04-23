@@ -43,11 +43,8 @@ class _PengaturanPageState extends State<PengaturanPage> {
     await prefs.setBool('pengingat_obat', nilai);
 
     if (!nilai) {
-      // ← Matikan semua notifikasi terjadwal
       await NotificationService.batalkanSemuaNotifikasi();
     } else {
-      // ← Hidupkan kembali — user perlu tambah obat lagi
-      // atau kita bisa reschedule dari data jadwal
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Pengingat aktif. Notifikasi akan muncul sesuai jadwal obat.'),
@@ -60,7 +57,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
     setState(() => _suara = nilai);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('suara_notifikasi', nilai);
-    // Suara akan dipakai saat notifikasi berikutnya dijadwalkan
   }
 
   void _ubahKataSandi() {
@@ -104,7 +100,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
                 // ── Notifikasi ────────────────────────────────
                 _sectionLabel('NOTIFIKASI'),
                 const SizedBox(height: 8),
-                // ✅ Card notifikasi dengan border + shadow tebal
                 _buildCard(
                   child: Column(
                     children: [
@@ -125,6 +120,37 @@ class _PengaturanPageState extends State<PengaturanPage> {
                         showDivider: false,
                       ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                _buildCard(
+                  child: _buildMenuItem(
+                    icon: Icons.battery_saver_outlined,
+                    label: 'Izinkan Notifikasi Background',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          title: const Text('Izinkan Notifikasi Background'),
+                          content: const Text(
+                            'Agar notifikasi pengingat obat muncul tepat waktu, '
+                                'pergi ke:\n\nPengaturan HP → Aplikasi → TBCare → '
+                                'Baterai → Pilih "Tidak ada batasan"',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Mengerti'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    showDivider: false,
                   ),
                 ),
 

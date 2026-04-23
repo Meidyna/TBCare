@@ -12,7 +12,7 @@ class PesanModel {
   final String isi;
   final PengirimPesan pengirim;
   final DateTime waktu;
-  final bool isLoading; // true = bubble "sedang mengetik"
+  final bool isLoading;
 
   PesanModel({
     required this.isi,
@@ -34,27 +34,20 @@ class ChatbotPage extends StatefulWidget {
 
 class _ChatbotPageState extends State<ChatbotPage> {
 
-  // ── State ────────────────────────────────────────────────────
   final List<PesanModel> _pesanList = [];
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+  bool _isLoadingHistory = false;
 
-  // ── Pesan sambutan awal bot ──────────────────────────────────
   static const String _pesanSambutan =
       'Halo! Saya asisten virtual TBCare. Saya di sini untuk membantu '
       'Anda dengan informasi tentang Tuberculosis. Ada yang bisa saya bantu?';
 
-  // ── Lifecycle ────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    // Tampilkan pesan sambutan saat halaman dibuka
-    _pesanList.add(PesanModel(
-      isi: _pesanSambutan,
-      pengirim: PengirimPesan.bot,
-      waktu: DateTime.now(),
-    ));
+    _loadHistory();
   }
 
   @override
@@ -68,7 +61,50 @@ class _ChatbotPageState extends State<ChatbotPage> {
   // FUNGSI
   // ════════════════════════════════════════════════════════════
 
-  /// Scroll ke paling bawah setelah pesan baru masuk
+  Future<void> _loadHistory() async {
+    setState(() => _isLoadingHistory = true);
+    try {
+      final history = await ChatbotRepository.getHistory();
+
+      setState(() {
+        _pesanList.clear();
+
+        if (history.isEmpty) {
+          // Tidak ada history → tampilkan sambutan
+          _pesanList.add(PesanModel(
+            isi: _pesanSambutan,
+            pengirim: PengirimPesan.bot,
+            waktu: DateTime.now(),
+          ));
+        } else {
+          // Ada history → tampilkan semua percakapan sebelumnya
+          for (final chat in history) {
+            _pesanList.add(PesanModel(
+              isi: chat['user']!,
+              pengirim: PengirimPesan.user,
+              waktu: DateTime.now(),
+            ));
+            _pesanList.add(PesanModel(
+              isi: chat['bot']!,
+              pengirim: PengirimPesan.bot,
+              waktu: DateTime.now(),
+            ));
+          }
+        }
+      });
+    } catch (e) {
+      // Kalau gagal load, tampilkan sambutan saja
+      _pesanList.add(PesanModel(
+        isi: _pesanSambutan,
+        pengirim: PengirimPesan.bot,
+        waktu: DateTime.now(),
+      ));
+    } finally {
+      setState(() => _isLoadingHistory = false);
+      _scrollKeBawah();
+    }
+  }
+
   void _scrollKeBawah() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -81,12 +117,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
   }
 
-  /// Kirim pesan user dan tunggu balasan bot
   Future<void> _kirimPesan() async {
     final teks = _inputController.text.trim();
     if (teks.isEmpty || _isSending) return;
 
-    // Tambah pesan user
     setState(() {
       _pesanList.add(PesanModel(
         isi: teks,
@@ -109,23 +143,16 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _scrollKeBawah();
 
     try {
-      print("KIRIM: $teks");
       final jawaban = await ChatbotRepository.kirimPesan(teks);
-
       _gantiBubbleLoading(jawaban);
     } catch (e) {
-      print("ERROR CHATBOT: $e");
-
-      _gantiBubbleLoading(
-        "Maaf, terjadi kesalahan. Silakan coba lagi.",
-      );
+      _gantiBubbleLoading('Maaf, terjadi kesalahan. Silakan coba lagi.');
     }
   }
 
   void _gantiBubbleLoading(String jawaban) {
     setState(() {
-      final idxLoading =
-      _pesanList.lastIndexWhere((p) => p.isLoading);
+      final idxLoading = _pesanList.lastIndexWhere((p) => p.isLoading);
       if (idxLoading != -1) {
         _pesanList[idxLoading] = PesanModel(
           isi: jawaban,
@@ -136,6 +163,40 @@ class _ChatbotPageState extends State<ChatbotPage> {
       _isSending = false;
     });
     _scrollKeBawah();
+  }
+
+  // ── Reset percakapan ─────────────────────────────────────────
+  Future<void> _resetPercakapan() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Mulai Percakapan Baru'),
+        content: const Text('Riwayat percakapan akan dihapus. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ChatbotRepository.resetSession();
+              setState(() {
+                _pesanList.clear();
+                _pesanList.add(PesanModel(
+                  isi: _pesanSambutan,
+                  pengirim: PengirimPesan.bot,
+                  waktu: DateTime.now(),
+                ));
+              });
+            },
+            child: const Text('Mulai Baru'),
+          ),
+        ],
+      ),
+    );
   }
 
   // ════════════════════════════════════════════════════════════
@@ -152,27 +213,26 @@ class _ChatbotPageState extends State<ChatbotPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Column(
         children: [
-
-          // ── Header ──────────────────────────────────────────
           _buildHeader(width, topPadding),
 
-          // ── Daftar pesan ────────────────────────────────────
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.fromLTRB(
-                  width * 0.04, 16, width * 0.04, 8),
-              itemCount: _pesanList.length,
-              itemBuilder: (context, index) {
-                return _buildBubble(_pesanList[index], width);
-              },
+          // Loading history
+          if (_isLoadingHistory)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(width * 0.04, 16, width * 0.04, 8),
+                itemCount: _pesanList.length,
+                itemBuilder: (context, index) {
+                  return _buildBubble(_pesanList[index], width);
+                },
+              ),
             ),
-          ),
 
-          // ── Disclaimer ──────────────────────────────────────
           _buildDisclaimer(width),
-
-          // ── Input bar ───────────────────────────────────────
           _buildInputBar(width, bottomPadding),
         ],
       ),
@@ -195,7 +255,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
       decoration: const BoxDecoration(color: AppTheme.buttonBackground),
       child: Row(
         children: [
-          // Tombol kembali
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
@@ -203,8 +262,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             constraints: const BoxConstraints(),
           ),
           SizedBox(width: width * 0.02),
-
-          // Avatar bot
           Container(
             width: 40,
             height: 40,
@@ -218,51 +275,53 @@ class _ChatbotPageState extends State<ChatbotPage> {
               size: 22,
             ),
           ),
-
           const SizedBox(width: 10),
-
-          // Nama & status
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'TBCare Assistant',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: width * 0.042,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'TBCare Assistant',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: width * 0.042,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF66FF99),
-                      shape: BoxShape.circle,
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF66FF99),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Online',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Online',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ← Tombol mulai percakapan baru
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: _resetPercakapan,
+            tooltip: 'Percakapan Baru',
           ),
         ],
       ),
     );
   }
 
-  /// Bubble pesan — kiri untuk bot, kanan untuk user
   Widget _buildBubble(PesanModel pesan, double width) {
     final isUser = pesan.pengirim == PengirimPesan.user;
     final waktu =
@@ -276,8 +335,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
         isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-
-          // Avatar bot (kiri)
           if (!isUser) ...[
             Container(
               width: 28,
@@ -294,20 +351,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
             const SizedBox(width: 8),
           ],
-
-          // Bubble
           Column(
             crossAxisAlignment:
             isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Container(
                 constraints: BoxConstraints(maxWidth: width * 0.68),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isUser
-                      ? const Color(0xFFE8824A) // oranye untuk user
-                      : Colors.white,           // putih untuk bot
+                  color: isUser ? const Color(0xFFE8824A) : Colors.white,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -322,7 +374,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
                     ),
                   ],
                 ),
-                // Isi bubble: loading dots atau teks
                 child: pesan.isLoading
                     ? _buildLoadingDots()
                     : Text(
@@ -335,18 +386,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Waktu
               Text(
                 waktu,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade400,
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
               ),
             ],
           ),
-
-          // Avatar user (kanan)
           if (isUser) ...[
             const SizedBox(width: 8),
             Container(
@@ -368,7 +413,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  /// Animasi tiga titik "sedang mengetik"
   Widget _buildLoadingDots() {
     return SizedBox(
       width: 40,
@@ -382,12 +426,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  /// Disclaimer di atas input bar
   Widget _buildDisclaimer(double width) {
     return Container(
       width: width,
-      margin: EdgeInsets.symmetric(
-          horizontal: width * 0.04, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -397,8 +439,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded,
-              color: Colors.orange.shade600, size: 16),
+          Icon(Icons.info_outline_rounded, color: Colors.orange.shade600, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -416,19 +457,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  /// Input bar di bagian bawah
   Widget _buildInputBar(double width, double bottomPadding) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          width * 0.04, 10, width * 0.04, bottomPadding + 10),
+      padding: EdgeInsets.fromLTRB(width * 0.04, 10, width * 0.04, bottomPadding + 10),
       decoration: BoxDecoration(
         color: AppTheme.mainBackground,
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Row(
         children: [
-
-          // Field input
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -444,8 +481,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
                 minLines: 1,
                 decoration: InputDecoration(
                   hintText: 'Ketik Pertanyaan Anda...',
-                  hintStyle: TextStyle(
-                      color: Colors.grey.shade400, fontSize: 13),
+                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 10),
                   border: InputBorder.none,
@@ -454,19 +490,14 @@ class _ChatbotPageState extends State<ChatbotPage> {
               ),
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // Tombol kirim
           GestureDetector(
             onTap: _kirimPesan,
             child: Container(
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: _isSending
-                    ? Colors.grey.shade300
-                    : AppTheme.buttonBackground,
+                color: _isSending ? Colors.grey.shade300 : AppTheme.buttonBackground,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -483,7 +514,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ANIMATED DOT — titik animasi untuk bubble "sedang mengetik"
+// ANIMATED DOT
 // ════════════════════════════════════════════════════════════════
 class _AnimatedDot extends StatefulWidget {
   final Duration delay;

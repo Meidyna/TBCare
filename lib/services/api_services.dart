@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import '../core/constants/api_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  static final GlobalKey<NavigatorState> navigatorKey =
+  GlobalKey<NavigatorState>();
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ApiConstants.baseUrl,
@@ -21,7 +24,7 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final prefs = await SharedPreferences.getInstance();
-          final token = prefs.getString('token');
+          final token = prefs.getString('auth_token');
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -36,7 +39,7 @@ class ApiService {
   static Future<dynamic> get(String endpoint) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = prefs.getString('auth_token');
 
       final response = await _dio.get(
         endpoint,
@@ -58,6 +61,9 @@ class ApiService {
   static Future<dynamic> post(String endpoint, Map<String, dynamic> data) async {
     try {
       final response = await _dio.post(endpoint, data: data);
+      if (response.data is Map && response.data['success'] == false) {
+        throw Exception(response.data['message'] ?? 'Terjadi kesalahan');
+      }
       return response.data;
     } on DioException catch (e) {
       if (e.response != null) {
