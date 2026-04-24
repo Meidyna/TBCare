@@ -402,9 +402,11 @@ class _JadwalPageState extends State<JadwalPage> {
               dosis: dosis,
               waktuMinum: waktuMinum,
             );
+            if (!mounted) return;
             await _loadJadwal(); // refresh dari API
           } catch (e) {
             if (mounted) {
+              if (!mounted) return;   // ← TAMBAH
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Gagal tambah obat: $e')),
               );

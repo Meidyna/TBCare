@@ -171,7 +171,7 @@ class NotificationService {
       ),
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle, // ← inexact lebih kompatibel
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, // ← inexact lebih kompatibel
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
