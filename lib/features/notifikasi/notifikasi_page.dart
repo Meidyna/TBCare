@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
-import '../../services/notification_service.dart'; // ← import service
-
-// ════════════════════════════════════════════════════════════════
-// CATATAN: NotifikasiModel sekarang ada di notification_service.dart
-// Hapus class NotifikasiModel dari file ini jika sebelumnya ada di sini
-// ════════════════════════════════════════════════════════════════
+import '../../services/notification_service.dart';
 
 class NotifikasiPage extends StatefulWidget {
   const NotifikasiPage({super.key});
@@ -39,34 +34,60 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   }
 
   // ════════════════════════════════════════════════════════════
-  // FUNGSI — semua pakai NotificationService (SharedPreferences)
+  // FUNGSI
   // ════════════════════════════════════════════════════════════
 
   Future<void> _loadNotifikasi() async {
+    if (!mounted) return; // ✅ cek mounted
     setState(() => _isLoading = true);
-    final data = await NotificationService.getHistory();
-    setState(() {
-      _semuaNotifikasi = data;
-      _isLoading = false;
-    });
+    try {
+      final data = await NotificationService.getHistory();
+      if (!mounted) return; // ✅ cek mounted setelah await
+      setState(() {
+        _semuaNotifikasi = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Gagal load notifikasi: $e'); // ✅ log error
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memuat notifikasi')),
+      );
+    }
   }
 
   Future<void> _tandaiDibaca(NotifikasiModel notif) async {
-    await NotificationService.tandaiDibaca(notif.id);
-    await _loadNotifikasi(); // refresh
+    try {
+      await NotificationService.tandaiDibaca(notif.id);
+      await _loadNotifikasi();
+    } catch (e) {
+      debugPrint('Gagal tandai dibaca: $e'); // ✅ tangkap error
+    }
   }
 
   Future<void> _tandaiSemuaDibaca() async {
-    await NotificationService.tandaiSemuaDibaca();
-    await _loadNotifikasi(); // refresh
+    try {
+      await NotificationService.tandaiSemuaDibaca();
+      await _loadNotifikasi();
+    } catch (e) {
+      debugPrint('Gagal tandai semua dibaca: $e'); // ✅ tangkap error
+    }
   }
 
   Future<void> _hapusNotifikasi(NotifikasiModel notif) async {
-    await NotificationService.hapusDariHistory(notif.id);
-    await _loadNotifikasi(); // refresh
+    try {
+      await NotificationService.hapusDariHistory(notif.id);
+      await _loadNotifikasi();
+    } catch (e) {
+      debugPrint('Gagal hapus notifikasi: $e'); // ✅ tangkap error
+    }
   }
 
-  void _gantiTab(String tab) => setState(() => _tabAktif = tab);
+  void _gantiTab(String tab) {
+    if (!mounted) return; // ✅ cek mounted
+    setState(() => _tabAktif = tab);
+  }
 
   // ════════════════════════════════════════════════════════════
   // BUILD
@@ -99,7 +120,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
             left: 0, right: 0, bottom: 0,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator( // ← tarik ke bawah untuk refresh
+                : RefreshIndicator(
               onRefresh: _loadNotifikasi,
               child: ListView(
                 padding: EdgeInsets.fromLTRB(
@@ -128,7 +149,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
   }
 
   // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS — sama persis dengan sebelumnya
+  // WIDGET BUILDERS
   // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
@@ -222,30 +243,32 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
         ],
       ),
       padding: const EdgeInsets.all(4),
-      child: Column(
+      // ✅ PERBAIKAN: ganti Column → Row agar tab berdampingan horizontal
+      child: Row(
         children: _tabs.map((tab) {
           final isAktif = _tabAktif == tab;
           final labelTeks = tab == "Semua"
               ? 'Semua (${_semuaNotifikasi.length})'
               : 'Belum Dibaca ($_jumlahBelumDibaca)';
 
-          return GestureDetector(
-            onTap: () => _gantiTab(tab),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: isAktif ? AppTheme.buttonBackground : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                labelTeks,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isAktif ? FontWeight.bold : FontWeight.normal,
-                  color: isAktif ? Colors.white : Colors.black54,
+          return Expanded( // ✅ Expanded agar tiap tab mengisi lebar yang sama
+            child: GestureDetector(
+              onTap: () => _gantiTab(tab),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isAktif ? AppTheme.buttonBackground : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  labelTeks,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isAktif ? FontWeight.bold : FontWeight.normal,
+                    color: isAktif ? Colors.white : Colors.black54,
+                  ),
                 ),
               ),
             ),
@@ -308,14 +331,13 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ikon berbeda berdasarkan jenis notifikasi
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
               color: notif.judul.contains('Diminum')
-                  ? AppTheme.buttonBackground  // hijau untuk konfirmasi
-                  : const Color(0xFFE8824A),   // oranye untuk pengingat
+                  ? AppTheme.buttonBackground
+                  : const Color(0xFFE8824A),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -348,7 +370,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                 Row(
                   children: [
                     Text(
-                      notif.waktuRelatif, // ← pakai getter waktuRelatif
+                      notif.waktuRelatif,
                       style: TextStyle(
                           fontSize: 11, color: Colors.grey.shade400),
                     ),

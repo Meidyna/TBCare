@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/navigation/app_routes.dart';
@@ -54,6 +53,7 @@ class _ProfilPageState extends State<ProfilPage> {
     setState(() => _isLoading = true);
     try {
       await ProfilRepository.getProfile();
+      if (!mounted) return; // ✅ cek mounted setelah await
       setState(() {
         _profil = ProfilModel(
           nama: UserSession.nama,
@@ -68,13 +68,13 @@ class _ProfilPageState extends State<ProfilPage> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false); // ✅ cek mounted di finally
     }
   }
 
   void _editProfil() async {
     final berubah = await Navigator.pushNamed(context, AppRoutes.editProfil);
-    if (berubah == true) _loadProfil();
+    if (berubah == true && mounted) _loadProfil(); // ✅ cek mounted
   }
 
   void _pengaturan() {
@@ -96,7 +96,7 @@ class _ProfilPageState extends State<ProfilPage> {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(ctx);
+              Navigator.pop(ctx); // tutup dialog konfirmasi dulu
               await _prosesLogout();
             },
             child: const Text('Keluar'),
@@ -106,7 +106,10 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
+  // ✅ PERBAIKAN UTAMA: _prosesLogout dengan try/finally + error handling
   Future<void> _prosesLogout() async {
+    // Tampilkan loading dialog
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -114,16 +117,46 @@ class _ProfilPageState extends State<ProfilPage> {
     );
 
     try {
-      await ApiService.post(ApiConstants.logout, {});
-    } catch (e) {}
+      // 1. Panggil API logout — lanjutkan meski gagal (offline tetap logout)
+      try {
+        await ApiService.post(ApiConstants.logout, {});
+      } catch (e) {
+        debugPrint('API logout gagal (lanjut hapus sesi lokal): $e'); // ✅ log error
+      }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('foto_profil_${UserSession.email}');
-    await NotificationService.hapusSemuaHistory();
-    await NotificationService.batalkanSemuaNotifikasi();
-    await UserSession.hapusToken();
-    UserSession.hapus();
+      // 2. Hapus foto profil dari SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('foto_profil_${UserSession.email}');
 
+      // 3. Hapus history notifikasi
+      await NotificationService.hapusSemuaHistory();
+
+      // 4. ✅ Batalkan notifikasi — dibungkus try-catch tersendiri
+      //    Penyebab PlatformException: Missing type parameter
+      try {
+        await NotificationService.batalkanSemuaNotifikasi();
+      } catch (e) {
+        debugPrint('Gagal batalkan notifikasi: $e');
+        // Lanjutkan logout meski notifikasi gagal dibatalkan
+      }
+
+      // 5. Hapus sesi user
+      await UserSession.hapusToken();
+      UserSession.hapus();
+
+    } catch (e) {
+      debugPrint('Error tidak terduga saat logout: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan saat keluar: $e')),
+        );
+      }
+    } finally {
+      // ✅ Tutup loading dialog — selalu dijalankan meski ada error
+      if (mounted) Navigator.of(context).pop();
+    }
+
+    // Navigasi ke login setelah semua selesai
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/login',

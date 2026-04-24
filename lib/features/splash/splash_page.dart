@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
+import '../../core/session/user_session.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -15,16 +16,27 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _startDelay();
+    _startDelay(); // panggil tanpa await — biarkan berjalan async
   }
 
-  void _startDelay() {
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.login,
-      );
-    });
+  // ✅ PERBAIKAN: async + cek mounted sebelum gunakan context
+  Future<void> _startDelay() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    // Jika widget sudah di-dispose, hentikan eksekusi
+    if (!mounted) return;
+
+    // ✅ Gunakan loadToken() untuk cek apakah user sudah login
+    final token = await UserSession.loadToken();
+    final isLoggedIn = token != null && token.isNotEmpty;
+
+    if (!mounted) return; // cek lagi setelah await
+
+    if (isLoggedIn) {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    }
   }
 
   @override
@@ -53,6 +65,9 @@ class _SplashPageState extends State<SplashPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 16),
+            // ✅ Tambah loading indicator agar UX lebih baik
+            const CircularProgressIndicator(),
           ],
         ),
       ),
