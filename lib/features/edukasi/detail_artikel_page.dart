@@ -12,7 +12,6 @@ class DetailArtikelPage extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final topPadding = MediaQuery.of(context).padding.top;
-
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
     const double cardOverlap = 20.0;
@@ -22,14 +21,11 @@ class DetailArtikelPage extends StatelessWidget {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(context, width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -101,8 +97,6 @@ class DetailArtikelPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ── Baris ikon + judul + badge ──────────────────────
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -142,7 +136,7 @@ class DetailArtikelPage extends StatelessWidget {
                       ),
                       child: Text(
                         konten.tipe,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppTheme.buttonBackground,
                           fontWeight: FontWeight.w600,
@@ -158,8 +152,6 @@ class DetailArtikelPage extends StatelessWidget {
           const SizedBox(height: 16),
           Divider(color: Colors.grey.shade100, thickness: 1),
           const SizedBox(height: 12),
-
-          // ── Isi artikel dari API ──────────────────────────────
           _buildIsiArtikel(width),
         ],
       ),
@@ -167,7 +159,6 @@ class DetailArtikelPage extends StatelessWidget {
   }
 
   Widget _buildIsiArtikel(double width) {
-    // ← Gunakan isi dari API, fallback ke deskripsi jika isi null
     final isi = (konten.isi != null && konten.isi!.isNotEmpty)
         ? konten.isi!
         : konten.deskripsi;
@@ -215,7 +206,7 @@ class DetailArtikelPage extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   '• ',
                   style: TextStyle(
                     color: AppTheme.buttonBackground,

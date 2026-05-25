@@ -4,9 +4,6 @@ import '../../core/navigation/app_routes.dart';
 import '../../repositories/skrining_repository.dart';
 import '../../models/skrining_model.dart';
 
-// ════════════════════════════════════════════════════════════════
-// SKRINING PAGE
-// ════════════════════════════════════════════════════════════════
 class SkriningPage extends StatefulWidget {
   const SkriningPage({super.key});
 
@@ -16,30 +13,22 @@ class SkriningPage extends StatefulWidget {
 
 class _SkriningPageState extends State<SkriningPage> {
 
-  // ── State ────────────────────────────────────────────────────
   int _indexSaat = 0;
   String? _jawabanDipilih;
   bool _isLoading = false;
   List<PertanyaanModel> _pertanyaan = [];
 
-  /// Menyimpan semua jawaban: { id_pertanyaan: jawaban }
   final Map<String, String> _jawaban = {};
 
-  // ── Init ─────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
     _loadPertanyaan();
   }
 
-  // ── Getters ──────────────────────────────────────────────────
   int get _totalPertanyaan => _pertanyaan.length;
   PertanyaanModel get _pertanyaanSaat => _pertanyaan[_indexSaat];
   double get _progress => _pertanyaan.isEmpty ? 0 : (_indexSaat + 1) / _totalPertanyaan;
-
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
 
   Future<void> _loadPertanyaan() async {
     setState(() => _isLoading = true);
@@ -68,13 +57,11 @@ class _SkriningPageState extends State<SkriningPage> {
     _jawaban[_pertanyaanSaat.id] = _jawabanDipilih!;
 
     if (_indexSaat < _totalPertanyaan - 1) {
-      // Lanjut ke pertanyaan berikutnya
       setState(() {
         _indexSaat++;
         _jawabanDipilih = null;
       });
     } else {
-      // Pertanyaan terakhir — kirim dan tampilkan hasil
       _kirimHasil();
     }
   }
@@ -88,7 +75,7 @@ class _SkriningPageState extends State<SkriningPage> {
         Navigator.pushReplacementNamed(
           context,
           AppRoutes.hasilSkrining,
-          arguments: hasil, // kirim HasilSkriningModel ke halaman hasil
+          arguments: hasil,
         );
       }
     } catch (e) {
@@ -101,10 +88,6 @@ class _SkriningPageState extends State<SkriningPage> {
       setState(() => _isLoading = false);
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -125,13 +108,11 @@ class _SkriningPageState extends State<SkriningPage> {
           ? const Center(child: Text('Tidak ada pertanyaan'))
           : Stack(
         children: [
-          /// ── HEADER ───────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -151,10 +132,6 @@ class _SkriningPageState extends State<SkriningPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -220,8 +197,6 @@ class _SkriningPageState extends State<SkriningPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          // ── Progress ────────────────────────────────────
           Text(
             'Pertanyaan ${_indexSaat + 1} dari $_totalPertanyaan',
             style: TextStyle(
@@ -243,7 +218,6 @@ class _SkriningPageState extends State<SkriningPage> {
 
           const SizedBox(height: 24),
 
-          // ── Teks pertanyaan ──────────────────────────────
           Text(
             _pertanyaanSaat.pertanyaan,
             style: const TextStyle(
@@ -256,13 +230,11 @@ class _SkriningPageState extends State<SkriningPage> {
 
           const SizedBox(height: 20),
 
-          // ── Pilihan jawaban (Ya / Tidak) ─────────────────
           _buildPilihan('Ya', width),
           _buildPilihan('Tidak', width),
 
           const SizedBox(height: 20),
 
-          // ── Tombol Selanjutnya ───────────────────────────
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(

@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/constants/api_constants.dart';
@@ -11,8 +10,8 @@ class ApiService {
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: ApiConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 30), // ← naikkan dari 10
-      receiveTimeout: const Duration(seconds: 30), // ← naikkan dari 10
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         "Content-Type": "application/json",
       },

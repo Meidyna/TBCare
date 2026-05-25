@@ -3,13 +3,9 @@ import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
 import '../../models/skrining_model.dart'; // ← import model dari API
 
-// ════════════════════════════════════════════════════════════════
-// HASIL SKRINING PAGE
-// ════════════════════════════════════════════════════════════════
 class HasilSkriningPage extends StatelessWidget {
   const HasilSkriningPage({super.key});
 
-  // ── Tentukan warna & ikon berdasarkan hasil_risiko dari API ──
   Color _warnaBg(String risiko) {
     switch (risiko) {
       case 'tinggi': return const Color(0xFFFCECEC);
@@ -44,7 +40,6 @@ class HasilSkriningPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ← Terima HasilSkriningModel dari API (bukan String lagi)
     final hasil = ModalRoute.of(context)?.settings.arguments as HasilSkriningModel;
 
     final size = MediaQuery.of(context).size;
@@ -60,14 +55,11 @@ class HasilSkriningPage extends StatelessWidget {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ───────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(context, width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -78,7 +70,6 @@ class HasilSkriningPage extends StatelessWidget {
                   _buildCardHasil(hasil, width),
                   const SizedBox(height: 20),
 
-                  // Tombol Ulangi Skrining
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -102,7 +93,6 @@ class HasilSkriningPage extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  // Tombol Kembali ke Beranda
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -136,10 +126,6 @@ class HasilSkriningPage extends StatelessWidget {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(BuildContext context, double width,
       double headerTotal, double topPadding) {
@@ -195,13 +181,10 @@ class HasilSkriningPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-
-          // ── Ikon ──────────────────────────────────────────
           Icon(_ikon(risiko), color: _warnaIkon(risiko), size: 56),
 
           const SizedBox(height: 12),
 
-          // ── Judul ─────────────────────────────────────────
           Text(
             _judul(risiko),
             style: const TextStyle(
@@ -213,7 +196,6 @@ class HasilSkriningPage extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Deskripsi ─────────────────────────────────────
           Text(
             'Berdasarkan jawaban Anda, tingkat risiko\nTBC Anda adalah $risiko',
             textAlign: TextAlign.center,
@@ -226,7 +208,6 @@ class HasilSkriningPage extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Total Skor ────────────────────────────────────
           Text(
             'Total Skor: ${hasil.totalSkor}',
             style: TextStyle(
@@ -238,7 +219,6 @@ class HasilSkriningPage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // ── Box Rekomendasi dari API ───────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -265,7 +245,6 @@ class HasilSkriningPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                // ← Rekomendasi langsung dari API
                 ...hasil.rekomendasi.map(
                       (r) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),

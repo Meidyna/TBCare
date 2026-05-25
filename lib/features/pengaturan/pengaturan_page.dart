@@ -4,9 +4,6 @@ import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/notification_service.dart';
 
-// ════════════════════════════════════════════════════════════════
-// PENGATURAN PAGE
-// ════════════════════════════════════════════════════════════════
 class PengaturanPage extends StatefulWidget {
   const PengaturanPage({super.key});
 
@@ -15,7 +12,6 @@ class PengaturanPage extends StatefulWidget {
 }
 
 class _PengaturanPageState extends State<PengaturanPage> {
-
   bool _pengingat = true;
   bool _suara     = true;
 
@@ -32,10 +28,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
       _suara = prefs.getBool('suara_notifikasi') ?? true;
     });
   }
-
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
 
   Future<void> _ubahPengingat(bool nilai) async {
     setState(() => _pengingat = nilai);
@@ -71,10 +63,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
     Navigator.pushNamed(context, AppRoutes.panduanPengguna);
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -88,7 +76,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Column(
         children: [
-
           _buildHeader(width, headerTotal, topPadding),
 
           Expanded(
@@ -96,8 +83,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, 24, width * 0.05, 32),
               children: [
-
-                // ── Notifikasi ────────────────────────────────
                 _sectionLabel('NOTIFIKASI'),
                 const SizedBox(height: 8),
                 _buildCard(
@@ -109,7 +94,7 @@ class _PengaturanPageState extends State<PengaturanPage> {
                         sublabel: 'Notifikasi jadwal minum obat',
                         nilai: _pengingat,
                         onChanged: _ubahPengingat,
-                        showDivider: true, // ✅ garis pemisah di tengah
+                        showDivider: true,
                       ),
                       _buildToggleItem(
                         icon: Icons.volume_up_outlined,
@@ -156,7 +141,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
                 const SizedBox(height: 24),
 
-                // ── Privasi & Keamanan ────────────────────────
                 _sectionLabel('Privasi & Keamanan'),
                 const SizedBox(height: 8),
                 _buildCard(
@@ -170,11 +154,9 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
                 const SizedBox(height: 24),
 
-                // ── Tentang — ✅ dipisah menjadi 2 card sendiri
                 _sectionLabel('Tentang'),
                 const SizedBox(height: 8),
 
-                // Card Tentang Aplikasi
                 _buildCard(
                   child: _buildMenuItem(
                     icon: Icons.info_outline_rounded,
@@ -186,7 +168,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
 
                 const SizedBox(height: 10),
 
-                // Card Panduan Pengguna
                 _buildCard(
                   child: _buildMenuItem(
                     icon: Icons.menu_book_outlined,
@@ -202,10 +183,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -253,16 +230,15 @@ class _PengaturanPageState extends State<PengaturanPage> {
     );
   }
 
-  /// ✅ Wrapper card dengan border tepi + shadow tebal
   Widget _buildCard({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade300),  // ✅ garis tepi
+        border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.10), // ✅ shadow lebih tebal
+            color: Colors.black.withOpacity(0.10),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -272,7 +248,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
     );
   }
 
-  /// Baris toggle switch
   Widget _buildToggleItem({
     required IconData icon,
     required String label,
@@ -329,7 +304,6 @@ class _PengaturanPageState extends State<PengaturanPage> {
     );
   }
 
-  /// Baris menu dengan ikon + label + panah
   Widget _buildMenuItem({
     required IconData icon,
     required String label,

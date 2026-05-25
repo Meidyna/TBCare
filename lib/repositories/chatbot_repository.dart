@@ -7,10 +7,8 @@ import '../core/session/user_session.dart';
 import '../services/api_services.dart';
 
 class ChatbotRepository {
-  // ── Key session per user ──────────────────────────────────────
   static String get _sessionKey => 'chatbot_session_${UserSession.email}';
 
-  // ── Ambil atau buat session ID ────────────────────────────────
   static Future<String> getOrCreateSessionId() async {
     final prefs = await SharedPreferences.getInstance();
     String? sessionId = prefs.getString(_sessionKey);
@@ -21,7 +19,6 @@ class ChatbotRepository {
     return sessionId;
   }
 
-  // ── Ambil history chat dari API ───────────────────────────────
   static Future<List<Map<String, String>>> getHistory() async {
     final sessionId = await getOrCreateSessionId();
     final endpoint = ApiConstants.historyChatbotSession
@@ -38,11 +35,8 @@ class ChatbotRepository {
     }
   }
 
-  // ── Kirim pesan ke AI dan simpan ke backend ───────────────────
   static Future<String> kirimPesan(String pesan) async {
     final sessionId = await getOrCreateSessionId();
-
-    // Step 1: Hit AI eksternal (n8n)
     final aiResponse = await http.post(
       Uri.parse(ApiConstants.postChatbot),
       headers: {'Content-Type': 'application/json'},
@@ -55,7 +49,6 @@ class ChatbotRepository {
     String responBot = 'Maaf, tidak ada respon dari server.';
     if (aiResponse.statusCode == 200) {
       final aiData = jsonDecode(aiResponse.body);
-      // Sesuaikan key response dari n8n
       responBot = aiData['output'] ??
           aiData['response'] ??
           aiData['text'] ??
@@ -63,7 +56,6 @@ class ChatbotRepository {
           responBot;
     }
 
-    // Step 2: Simpan ke backend
     try {
       await ApiService.post(ApiConstants.chatbot, {
         'session_id': sessionId,
@@ -77,12 +69,10 @@ class ChatbotRepository {
     return responBot;
   }
 
-  // ── Reset session (mulai percakapan baru) ─────────────────────
   static Future<void> resetSession() async {
     final prefs = await SharedPreferences.getInstance();
     final sessionId = prefs.getString(_sessionKey);
 
-    // ← Hapus history di backend jika ada session
     if (sessionId != null) {
       try {
         final endpoint = ApiConstants.deleteHistoryChatbotSession
@@ -93,7 +83,6 @@ class ChatbotRepository {
       }
     }
 
-    // ← Hapus session ID lokal
     await prefs.remove(_sessionKey);
   }
 }

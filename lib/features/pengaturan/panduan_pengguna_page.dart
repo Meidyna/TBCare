@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
 class _PanduanItem {
-  final String? iconAsset;  // ← tambah ini
-  final IconData? icon;     // ← jadikan nullable
+  final String? iconAsset;
+  final IconData? icon;
   final String judul;
   final List<_PanduanKonten> konten;
 
@@ -21,7 +18,7 @@ class _PanduanItem {
 class _PanduanKonten {
   final String subjudul;
   final String deskripsi;
-  final List<String> langkah; // numbered list, kosong jika tidak ada
+  final List<String> langkah;
 
   const _PanduanKonten({
     required this.subjudul,
@@ -30,9 +27,6 @@ class _PanduanKonten {
   });
 }
 
-// ════════════════════════════════════════════════════════════════
-// PANDUAN PENGGUNA PAGE
-// ════════════════════════════════════════════════════════════════
 class PanduanPenggunaPage extends StatefulWidget {
   const PanduanPenggunaPage({super.key});
 
@@ -41,11 +35,8 @@ class PanduanPenggunaPage extends StatefulWidget {
 }
 
 class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
-
-  // Index accordion yang sedang terbuka, null = semua tertutup
   int? _indexTerbuka;
 
-  // ── Data panduan ─────────────────────────────────────────────
   static const List<_PanduanItem> _daftarPanduan = [
     _PanduanItem(
       icon: Icons.home_outlined,
@@ -221,10 +212,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
     ),
   ];
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -240,14 +227,11 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -255,13 +239,10 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, 0, width * 0.05, 32),
               children: [
-
-                // Card sambutan
                 _buildCardSambutan(width),
 
                 const SizedBox(height: 16),
 
-                // Daftar accordion
                 ..._daftarPanduan.asMap().entries.map(
                       (entry) => _buildAccordion(
                       width, entry.key, entry.value),
@@ -273,10 +254,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -324,7 +301,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
     );
   }
 
-  /// Card sambutan di atas accordion
   Widget _buildCardSambutan(double width) {
     return Container(
       width: double.infinity,
@@ -387,7 +363,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
     );
   }
 
-  /// Satu item accordion
   Widget _buildAccordion(double width, int index, _PanduanItem item) {
     final terbuka = _indexTerbuka == index;
 
@@ -411,8 +386,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
       ),
       child: Column(
         children: [
-
-          // ── Header accordion (selalu terlihat) ────────────
           InkWell(
             onTap: () => setState(() {
               _indexTerbuka = terbuka ? null : index;
@@ -423,7 +396,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
                   horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  // Ikon fitur
                   Container(
                     width: 36,
                     height: 36,
@@ -451,7 +423,7 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Judul
+
                   Expanded(
                     child: Text(
                       item.judul,
@@ -466,7 +438,7 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
                       ),
                     ),
                   ),
-                  // Panah
+
                   AnimatedRotation(
                     turns: terbuka ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -482,7 +454,6 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
             ),
           ),
 
-          // ── Isi accordion (hanya saat terbuka) ───────────
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 250),
             crossFadeState: terbuka
@@ -512,12 +483,10 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
     );
   }
 
-  /// Satu blok konten di dalam accordion
   Widget _buildKonten(_PanduanKonten konten, bool isLast) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Subjudul hijau
         Text(
           konten.subjudul,
           style: const TextStyle(
@@ -527,7 +496,7 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
           ),
         ),
         const SizedBox(height: 6),
-        // Deskripsi
+
         Text(
           konten.deskripsi,
           style: const TextStyle(
@@ -536,7 +505,7 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
             height: 1.5,
           ),
         ),
-        // Numbered list langkah (jika ada)
+
         if (konten.langkah.isNotEmpty) ...[
           const SizedBox(height: 8),
           ...konten.langkah.asMap().entries.map((e) {
@@ -568,7 +537,7 @@ class _PanduanPenggunaPageState extends State<PanduanPenggunaPage> {
             );
           }),
         ],
-        // Pemisah antar konten dalam satu accordion
+
         if (!isLast) ...[
           const SizedBox(height: 12),
           Divider(color: Colors.grey.shade400),

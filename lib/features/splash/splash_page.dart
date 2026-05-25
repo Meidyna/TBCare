@@ -16,21 +16,18 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _startDelay(); // panggil tanpa await — biarkan berjalan async
+    _startDelay();
   }
 
-  // ✅ PERBAIKAN: async + cek mounted sebelum gunakan context
   Future<void> _startDelay() async {
     await Future.delayed(const Duration(seconds: 3));
 
-    // Jika widget sudah di-dispose, hentikan eksekusi
     if (!mounted) return;
 
-    // ✅ Gunakan loadToken() untuk cek apakah user sudah login
     final token = await UserSession.loadToken();
     final isLoggedIn = token != null && token.isNotEmpty;
 
-    if (!mounted) return; // cek lagi setelah await
+    if (!mounted) return;
 
     if (isLoggedIn) {
       Navigator.pushReplacementNamed(context, AppRoutes.home);
@@ -66,7 +63,6 @@ class _SplashPageState extends State<SplashPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // ✅ Tambah loading indicator agar UX lebih baik
             const CircularProgressIndicator(),
           ],
         ),

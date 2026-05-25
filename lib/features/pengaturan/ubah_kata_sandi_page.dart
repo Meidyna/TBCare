@@ -3,9 +3,6 @@ import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_services.dart';
 
-// ════════════════════════════════════════════════════════════════
-// UBAH KATA SANDI PAGE
-// ════════════════════════════════════════════════════════════════
 class UbahKataSandiPage extends StatefulWidget {
   const UbahKataSandiPage({super.key});
 
@@ -15,13 +12,11 @@ class UbahKataSandiPage extends StatefulWidget {
 
 class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
 
-  // ── Controllers ──────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
   final _sandiLamaController  = TextEditingController();
   final _sandiBaruController  = TextEditingController();
   final _konfirmasiController = TextEditingController();
 
-  // ── State visibilitas password ────────────────────────────────
   bool _lihatSandiLama    = false;
   bool _lihatSandiBaru    = false;
   bool _lihatKonfirmasi   = false;
@@ -34,10 +29,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     _konfirmasiController.dispose();
     super.dispose();
   }
-
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
 
   Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
@@ -69,10 +60,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -88,14 +75,11 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -109,10 +93,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -160,7 +140,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     );
   }
 
-  /// Card form ubah kata sandi
   Widget _buildCardForm(double width) {
     return Container(
       width: double.infinity,
@@ -182,8 +161,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ── Kata Sandi Saat Ini ──────────────────────────
             _label('Kata Sandi Saat Ini'),
             const SizedBox(height: 6),
             _fieldPassword(
@@ -202,7 +179,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
 
             const SizedBox(height: 16),
 
-            // ── Kata Sandi Baru ──────────────────────────────
             _label('Kata Sandi Baru'),
             const SizedBox(height: 6),
             _fieldPassword(
@@ -224,7 +200,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
 
             const SizedBox(height: 16),
 
-            // ── Konfirmasi Kata Sandi Baru ───────────────────
             _label('Konfirmasi Kata Sandi Baru'),
             const SizedBox(height: 6),
             _fieldPassword(
@@ -246,7 +221,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
 
             const SizedBox(height: 24),
 
-            // ── Tombol Simpan ────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -292,7 +266,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     ),
   );
 
-  /// Field password dengan toggle lihat/sembunyikan
   Widget _fieldPassword({
     required TextEditingController controller,
     required String hint,
@@ -310,13 +283,13 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         filled: true,
         fillColor: Colors.white,
-        // Ikon kunci di luar field (prefix luar)
+
         prefixIcon: Icon(
           Icons.lock_outline_rounded,
           color: Colors.grey.shade400,
           size: 20,
         ),
-        // Ikon mata untuk toggle
+
         suffixIcon: IconButton(
           icon: Icon(
             lihat

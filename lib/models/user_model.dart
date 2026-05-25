@@ -4,6 +4,6 @@ class UserModel {
   UserModel({required this.token});
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    token: json['data']['token'], // ← ambil dari dalam 'data'
+    token: json['data']['token'],
   );
 }

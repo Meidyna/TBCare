@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
-// ════════════════════════════════════════════════════════════════
-// TENTANG APLIKASI PAGE
-// Halaman ini sepenuhnya statis — tidak memerlukan API
-// ════════════════════════════════════════════════════════════════
 class TentangAplikasiPage extends StatelessWidget {
   const TentangAplikasiPage({super.key});
 
@@ -23,14 +19,11 @@ class TentangAplikasiPage extends StatelessWidget {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(context, width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -39,25 +32,18 @@ class TentangAplikasiPage extends StatelessWidget {
                   width * 0.05, 0, width * 0.05, 32),
               child: Column(
                 children: [
-
-                  // Card identitas aplikasi
                   _buildCardIdentitas(width),
-
                   const SizedBox(height: 16),
 
-                  // Card deskripsi
                   _buildCardDeskripsi(width),
-
                   const SizedBox(height: 16),
 
-                  // Fitur utama
                   _buildSectionLabel('FITUR UTAMA'),
                   const SizedBox(height: 8),
-                  _buildCardFitur(width),
 
+                  _buildCardFitur(width),
                   const SizedBox(height: 16),
 
-                  // Disclaimer
                   _buildCardDisclaimer(width),
                 ],
               ),
@@ -67,10 +53,6 @@ class TentangAplikasiPage extends StatelessWidget {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(BuildContext context, double width,
       double headerTotal, double topPadding) {
@@ -119,12 +101,10 @@ class TentangAplikasiPage extends StatelessWidget {
     );
   }
 
-  /// Card logo + nama + versi + tagline
   Widget _buildCardIdentitas(double width) {
     return _card(
       child: Column(
         children: [
-          // Logo aplikasi
           Container(
             width: 72,
             height: 72,
@@ -139,7 +119,6 @@ class TentangAplikasiPage extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Nama aplikasi
           const Text(
             'TBCare',
             style: TextStyle(
@@ -151,7 +130,6 @@ class TentangAplikasiPage extends StatelessWidget {
 
           const SizedBox(height: 6),
 
-          // Tagline
           Text(
             'Aplikasi pendamping untuk pasien Tuberculosis',
             textAlign: TextAlign.center,
@@ -164,7 +142,6 @@ class TentangAplikasiPage extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Badge versi
           Container(
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 4),
@@ -186,7 +163,6 @@ class TentangAplikasiPage extends StatelessWidget {
     );
   }
 
-  /// Card deskripsi singkat aplikasi
   Widget _buildCardDeskripsi(double width) {
     return _card(
       child: Row(
@@ -237,7 +213,6 @@ class TentangAplikasiPage extends StatelessWidget {
     );
   }
 
-  /// Card daftar fitur utama
   Widget _buildCardFitur(double width) {
     const fitur = [
       _FiturData(
@@ -319,13 +294,12 @@ class TentangAplikasiPage extends StatelessWidget {
     );
   }
 
-  /// Card disclaimer
   Widget _buildCardDisclaimer(double width) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF2D1), // kuning muda
+        color: const Color(0xFFFFF2D1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE8C96A).withOpacity(0.5)),
         boxShadow: [
@@ -372,7 +346,6 @@ class TentangAplikasiPage extends StatelessWidget {
     );
   }
 
-  /// Wrapper card putih dengan border + shadow
   Widget _card({required Widget child}) {
     return Container(
       width: double.infinity,
@@ -394,7 +367,6 @@ class TentangAplikasiPage extends StatelessWidget {
   }
 }
 
-// ── Helper class data fitur ──────────────────────────────────────
 class _FiturData {
   final String label;
   final String deskripsi;

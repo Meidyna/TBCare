@@ -16,7 +16,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool hasNotification = false;
 
-  // ← Data jadwal dari API
   ObatModel? _obatBerikutnya;
   bool _isLoadingJadwal = false;
 
@@ -141,7 +140,6 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Greeting + notifikasi ──────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -168,7 +166,6 @@ class _HomePageState extends State<HomePage> {
 
           const SizedBox(height: 25),
 
-          // ── Card jadwal berikutnya ─────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -215,7 +212,6 @@ class _HomePageState extends State<HomePage> {
                             ),
                             const SizedBox(height: 4),
 
-                            // ← Tampilkan data dari API
                             if (_isLoadingJadwal)
                               const SizedBox(
                                 height: 16,
@@ -251,7 +247,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                // Tombol Lihat hanya muncul kalau ada obat
                 if (_obatBerikutnya != null)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(

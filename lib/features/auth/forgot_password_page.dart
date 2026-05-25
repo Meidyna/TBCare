@@ -28,8 +28,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             children: [
               const SizedBox(height: 80),
 
-              // Logo
-
               SizedBox(
                 width: screenWidth * 0.25,
                 height: screenWidth * 0.25,
@@ -60,7 +58,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
               const SizedBox(height: 40),
 
-              // Card Reset
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.all(24),
@@ -181,7 +178,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                       backgroundColor: Colors.green,
                                     ),
                                   );
-                                  // Kembali ke login setelah berhasil
                                   Navigator.pushReplacementNamed(context, AppRoutes.login);
                                 }
                               } catch (e) {

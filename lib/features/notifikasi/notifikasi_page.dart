@@ -33,22 +33,18 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     _loadNotifikasi();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
-
   Future<void> _loadNotifikasi() async {
-    if (!mounted) return; // ✅ cek mounted
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final data = await NotificationService.getHistory();
-      if (!mounted) return; // ✅ cek mounted setelah await
+      if (!mounted) return;
       setState(() {
         _semuaNotifikasi = data;
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Gagal load notifikasi: $e'); // ✅ log error
+      debugPrint('Gagal load notifikasi: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,7 +58,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       await NotificationService.tandaiDibaca(notif.id);
       await _loadNotifikasi();
     } catch (e) {
-      debugPrint('Gagal tandai dibaca: $e'); // ✅ tangkap error
+      debugPrint('Gagal tandai dibaca: $e');
     }
   }
 
@@ -71,7 +67,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       await NotificationService.tandaiSemuaDibaca();
       await _loadNotifikasi();
     } catch (e) {
-      debugPrint('Gagal tandai semua dibaca: $e'); // ✅ tangkap error
+      debugPrint('Gagal tandai semua dibaca: $e');
     }
   }
 
@@ -80,18 +76,14 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       await NotificationService.hapusDariHistory(notif.id);
       await _loadNotifikasi();
     } catch (e) {
-      debugPrint('Gagal hapus notifikasi: $e'); // ✅ tangkap error
+      debugPrint('Gagal hapus notifikasi: $e');
     }
   }
 
   void _gantiTab(String tab) {
-    if (!mounted) return; // ✅ cek mounted
+    if (!mounted) return;
     setState(() => _tabAktif = tab);
   }
-
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -147,10 +139,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -243,7 +231,6 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
         ],
       ),
       padding: const EdgeInsets.all(4),
-      // ✅ PERBAIKAN: ganti Column → Row agar tab berdampingan horizontal
       child: Row(
         children: _tabs.map((tab) {
           final isAktif = _tabAktif == tab;
@@ -251,7 +238,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
               ? 'Semua (${_semuaNotifikasi.length})'
               : 'Belum Dibaca ($_jumlahBelumDibaca)';
 
-          return Expanded( // ✅ Expanded agar tiap tab mengisi lebar yang sama
+          return Expanded(
             child: GestureDetector(
               onTap: () => _gantiTab(tab),
               child: AnimatedContainer(
@@ -378,7 +365,7 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
                     if (belumDibaca) ...[
                       GestureDetector(
                         onTap: () => _tandaiDibaca(notif),
-                        child: Text(
+                        child: const Text(
                           'Tandai Dibaca',
                           style: TextStyle(
                             fontSize: 12,

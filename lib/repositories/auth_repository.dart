@@ -10,9 +10,8 @@ class AuthRepository {
       "password": password,
     });
 
-    // res['data']['token'] sesuai struktur JSON response
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', res['data']['token']); // ← simpan token
+    await prefs.setString('token', res['data']['token']);
 
     return UserModel.fromJson(res);
   }

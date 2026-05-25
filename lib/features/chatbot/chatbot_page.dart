@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../repositories/chatbot_repository.dart';
 
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
-
 enum PengirimPesan { user, bot }
 
 class PesanModel {
@@ -22,9 +18,6 @@ class PesanModel {
   });
 }
 
-// ════════════════════════════════════════════════════════════════
-// CHATBOT PAGE
-// ════════════════════════════════════════════════════════════════
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
 
@@ -57,10 +50,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     super.dispose();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
-
   Future<void> _loadHistory() async {
     setState(() => _isLoadingHistory = true);
     try {
@@ -70,14 +59,12 @@ class _ChatbotPageState extends State<ChatbotPage> {
         _pesanList.clear();
 
         if (history.isEmpty) {
-          // Tidak ada history → tampilkan sambutan
           _pesanList.add(PesanModel(
             isi: _pesanSambutan,
             pengirim: PengirimPesan.bot,
             waktu: DateTime.now(),
           ));
         } else {
-          // Ada history → tampilkan semua percakapan sebelumnya
           for (final chat in history) {
             _pesanList.add(PesanModel(
               isi: chat['user']!,
@@ -93,7 +80,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
         }
       });
     } catch (e) {
-      // Kalau gagal load, tampilkan sambutan saja
       _pesanList.add(PesanModel(
         isi: _pesanSambutan,
         pengirim: PengirimPesan.bot,
@@ -165,7 +151,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _scrollKeBawah();
   }
 
-  // ── Reset percakapan ─────────────────────────────────────────
   Future<void> _resetPercakapan() async {
     showDialog(
       context: context,
@@ -199,10 +184,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
-
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
@@ -215,7 +196,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
         children: [
           _buildHeader(width, topPadding),
 
-          // Loading history
           if (_isLoadingHistory)
             const Expanded(
               child: Center(child: CircularProgressIndicator()),
@@ -238,10 +218,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double topPadding) {
     return Container(
@@ -311,7 +287,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ),
 
-          // ← Tombol mulai percakapan baru
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: _resetPercakapan,
@@ -513,9 +488,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-// ANIMATED DOT
-// ════════════════════════════════════════════════════════════════
 class _AnimatedDot extends StatefulWidget {
   final Duration delay;
   const _AnimatedDot({required this.delay});

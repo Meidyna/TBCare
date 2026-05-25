@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../navigation/app_routes.dart';
 import '../theme/app_theme.dart';
 
 class CustomBottomNav extends StatelessWidget {

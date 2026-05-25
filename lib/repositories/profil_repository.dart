@@ -16,7 +16,7 @@ class ProfilRepository {
       email: data['email'] ?? '',
       telepon: data['no_telepon'] ?? '',
       token: UserSession.token,
-      fotoPath: fotoPath, // ← tambah ini
+      fotoPath: fotoPath,
     );
   }
 

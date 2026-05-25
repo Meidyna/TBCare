@@ -5,15 +5,9 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import '../core/session/user_session.dart';
 
-// ════════════════════════════════════════════════════════════════
-// TOP-LEVEL FUNCTION — wajib ada untuk background notification
-// ════════════════════════════════════════════════════════════════
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse details) {}
 
-// ════════════════════════════════════════════════════════════════
-// MODEL HISTORY NOTIFIKASI
-// ════════════════════════════════════════════════════════════════
 class NotifikasiModel {
   final String id;
   final String judul;
@@ -56,9 +50,6 @@ class NotifikasiModel {
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-// NOTIFICATION SERVICE
-// ════════════════════════════════════════════════════════════════
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
   FlutterLocalNotificationsPlugin();
@@ -83,9 +74,6 @@ class NotificationService {
     importance: Importance.defaultImportance,
   );
 
-  // ════════════════════════════════════════════════════════
-  // INIT
-  // ════════════════════════════════════════════════════════
   static Future<void> init() async {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
@@ -96,7 +84,6 @@ class NotificationService {
     const InitializationSettings settings =
     InitializationSettings(android: androidSettings);
 
-    // ← Tambah background handler
     await _plugin.initialize(
       settings,
       onDidReceiveNotificationResponse: (details) {},
@@ -112,9 +99,6 @@ class NotificationService {
     await androidPlugin?.requestExactAlarmsPermission();
   }
 
-  // ════════════════════════════════════════════════════════
-  // MINTA IZIN — panggil setelah login
-  // ════════════════════════════════════════════════════════
   static Future<void> mintaIzin() async {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -122,9 +106,6 @@ class NotificationService {
     await androidPlugin?.requestExactAlarmsPermission();
   }
 
-  // ════════════════════════════════════════════════════════
-  // JADWALKAN NOTIFIKASI
-  // ════════════════════════════════════════════════════════
   static Future<void> jadwalkanNotifikasiObat({
     required String obatId,
     required String namaObat,
@@ -171,14 +152,11 @@ class NotificationService {
       ),
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, // ← inexact lebih kompatibel
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  // ════════════════════════════════════════════════════════
-  // NOTIFIKASI LANGSUNG
-  // ════════════════════════════════════════════════════════
   static Future<void> tampilkanNotifikasiDiminum(String namaObat) async {
     final id = DateTime.now().millisecondsSinceEpoch % 100000;
 
@@ -205,9 +183,6 @@ class NotificationService {
     ));
   }
 
-  // ════════════════════════════════════════════════════════
-  // BATALKAN NOTIFIKASI
-  // ════════════════════════════════════════════════════════
   static Future<void> batalkanNotifikasiObat({
     required String obatId,
     required List<String> waktuMinum,
@@ -227,9 +202,6 @@ class NotificationService {
     return prefs.getBool('suara_notifikasi') ?? true;
   }
 
-  // ════════════════════════════════════════════════════════
-  // HISTORY NOTIFIKASI
-  // ════════════════════════════════════════════════════════
   static Future<void> _simpanKeHistory(NotifikasiModel notif) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefKey) ?? [];
@@ -281,9 +253,6 @@ class NotificationService {
     await prefs.remove(_prefKey);
   }
 
-  // ════════════════════════════════════════════════════════
-  // HELPER
-  // ════════════════════════════════════════════════════════
   static int _buatNotifId(String obatId, String waktu) {
     final gabung = '$obatId-$waktu';
     return gabung.hashCode.abs() % 2147483647;

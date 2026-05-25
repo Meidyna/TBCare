@@ -5,7 +5,7 @@ import '../services/api_services.dart';
 class LayananRepository {
   static Future<List<LayananKesehatanModel>> getLayanan({int page = 1}) async {
     final res = await ApiService.get(
-      '${ApiConstants.layananKesehatan}?page=$page&limit=20', // ← tambah limit=20
+      '${ApiConstants.layananKesehatan}?page=$page&limit=20',
     );
     final List data = res['data']['healthServices'];
     return data.map((e) => LayananKesehatanModel.fromJson(e)).toList();

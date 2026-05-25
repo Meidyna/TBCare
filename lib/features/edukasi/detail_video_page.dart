@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import 'konten_edukasi_page.dart';
 
 class DetailVideoPage extends StatefulWidget {
   final KontenEdukasiModel konten;
-
   const DetailVideoPage({super.key, required this.konten});
 
   @override
@@ -34,7 +32,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
     }
 
     try {
-      // Gabungkan baseUrl + path video
       final videoUrl = widget.konten.urlVideo!;
       debugPrint('VIDEO URL: $videoUrl');
       _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
@@ -68,7 +65,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final topPadding = MediaQuery.of(context).padding.top;
-
     const double headerContentHeight = 100.0;
     final double headerTotal = topPadding + headerContentHeight;
     const double cardOverlap = 28.0;
@@ -78,14 +74,11 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(context, width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -156,21 +149,16 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-
-          // ── Area Video Player ─────────────────────────────
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: _buildVideoPlayer(width),
           ),
 
-          // ── Badge + Judul + Divider + Deskripsi ──────────
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                // Badge Video
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
@@ -219,7 +207,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
   }
 
   Widget _buildVideoPlayer(double width) {
-    // Loading
     if (_isLoading) {
       return Container(
         width: double.infinity,
@@ -231,7 +218,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
       );
     }
 
-    // Error / tidak ada video
     if (_hasError || _controller == null) {
       return Container(
         width: double.infinity,
@@ -257,7 +243,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
       );
     }
 
-    // Video player
     return GestureDetector(
       onTap: _togglePlay,
       child: Container(
@@ -267,13 +252,11 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Video
             AspectRatio(
               aspectRatio: _controller!.value.aspectRatio,
               child: VideoPlayer(_controller!),
             ),
 
-            // Tombol play/pause overlay
             ValueListenableBuilder(
               valueListenable: _controller!,
               builder: (context, value, child) {
@@ -297,7 +280,6 @@ class _DetailVideoPageState extends State<DetailVideoPage> {
               },
             ),
 
-            // Progress bar di bawah
             Positioned(
               bottom: 0,
               left: 0,

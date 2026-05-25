@@ -94,10 +94,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     });
   }
 
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -114,14 +110,11 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
       backgroundColor: AppTheme.mainBackground,
       body: Stack(
         children: [
-
-          /// ── HEADER ─────────────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ──────────────────────────────────
           Positioned(
             top: searchTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -131,15 +124,12 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, listPaddingTop, width * 0.05, 0),
               children: [
-
-                // Hasil kosong
                 if (_layananTerfilter.isEmpty)
                   _buildEmpty()
                 else
                   ..._layananTerfilter
                       .map((l) => _buildKartuLayanan(width, l)),
 
-                // Tombol Load More (hanya tampil saat tidak sedang search)
                 if (_hasMoreData && _searchController.text.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -173,7 +163,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
             ),
           ),
 
-          /// ── SEARCH BAR ─────────────────────────────────────
           Positioned(
             top: searchTopOffset,
             left: width * 0.05,
@@ -184,10 +173,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -318,7 +303,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // ── Ikon tipe layanan ─────────────────────────────
           Container(
             width: 44,
             height: 44,
@@ -335,7 +319,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
 
           const SizedBox(width: 12),
 
-          // ── Info layanan ──────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

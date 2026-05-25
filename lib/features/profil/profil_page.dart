@@ -9,9 +9,6 @@ import '../../repositories/profil_repository.dart';
 import '../../services/api_services.dart';
 import '../../services/notification_service.dart';
 
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
 class ProfilModel {
   final String nama;
   final String email;
@@ -24,9 +21,6 @@ class ProfilModel {
   });
 }
 
-// ════════════════════════════════════════════════════════════════
-// PROFIL PAGE
-// ════════════════════════════════════════════════════════════════
 class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
 
@@ -45,15 +39,11 @@ class _ProfilPageState extends State<ProfilPage> {
     _loadProfil();
   }
 
-  // ════════════════════════════════════════════════════════════
-  // FUNGSI
-  // ════════════════════════════════════════════════════════════
-
   Future<void> _loadProfil() async {
     setState(() => _isLoading = true);
     try {
       await ProfilRepository.getProfile();
-      if (!mounted) return; // ✅ cek mounted setelah await
+      if (!mounted) return;
       setState(() {
         _profil = ProfilModel(
           nama: UserSession.nama,
@@ -68,13 +58,13 @@ class _ProfilPageState extends State<ProfilPage> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false); // ✅ cek mounted di finally
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _editProfil() async {
     final berubah = await Navigator.pushNamed(context, AppRoutes.editProfil);
-    if (berubah == true && mounted) _loadProfil(); // ✅ cek mounted
+    if (berubah == true && mounted) _loadProfil();
   }
 
   void _pengaturan() {
@@ -96,7 +86,7 @@ class _ProfilPageState extends State<ProfilPage> {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(ctx); // tutup dialog konfirmasi dulu
+              Navigator.pop(ctx);
               await _prosesLogout();
             },
             child: const Text('Keluar'),
@@ -106,9 +96,7 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  // ✅ PERBAIKAN UTAMA: _prosesLogout dengan try/finally + error handling
   Future<void> _prosesLogout() async {
-    // Tampilkan loading dialog
     if (!mounted) return;
     showDialog(
       context: context,
@@ -117,30 +105,23 @@ class _ProfilPageState extends State<ProfilPage> {
     );
 
     try {
-      // 1. Panggil API logout — lanjutkan meski gagal (offline tetap logout)
       try {
         await ApiService.post(ApiConstants.logout, {});
       } catch (e) {
-        debugPrint('API logout gagal (lanjut hapus sesi lokal): $e'); // ✅ log error
+        debugPrint('API logout gagal (lanjut hapus sesi lokal): $e');
       }
 
-      // 2. Hapus foto profil dari SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('foto_profil_${UserSession.email}');
 
-      // 3. Hapus history notifikasi
       await NotificationService.hapusSemuaHistory();
 
-      // 4. ✅ Batalkan notifikasi — dibungkus try-catch tersendiri
-      //    Penyebab PlatformException: Missing type parameter
       try {
         await NotificationService.batalkanSemuaNotifikasi();
       } catch (e) {
         debugPrint('Gagal batalkan notifikasi: $e');
-        // Lanjutkan logout meski notifikasi gagal dibatalkan
       }
 
-      // 5. Hapus sesi user
       await UserSession.hapusToken();
       UserSession.hapus();
 
@@ -152,11 +133,9 @@ class _ProfilPageState extends State<ProfilPage> {
         );
       }
     } finally {
-      // ✅ Tutup loading dialog — selalu dijalankan meski ada error
       if (mounted) Navigator.of(context).pop();
     }
 
-    // Navigasi ke login setelah semua selesai
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/login',
@@ -164,10 +143,6 @@ class _ProfilPageState extends State<ProfilPage> {
       );
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -186,14 +161,11 @@ class _ProfilPageState extends State<ProfilPage> {
           ? const Center(child: CircularProgressIndicator())
           : Stack(
         children: [
-
-          /// ── HEADER ───────────────────────────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: _buildHeader(width, headerTotal, topPadding),
           ),
 
-          /// ── KONTEN SCROLL ────────────────────────────
           Positioned(
             top: cardTopOffset,
             left: 0, right: 0, bottom: 0,
@@ -225,10 +197,6 @@ class _ProfilPageState extends State<ProfilPage> {
       ),
     );
   }
-
-  // ════════════════════════════════════════════════════════════
-  // WIDGET BUILDERS
-  // ════════════════════════════════════════════════════════════
 
   Widget _buildHeader(double width, double headerTotal, double topPadding) {
     return Container(
@@ -268,8 +236,6 @@ class _ProfilPageState extends State<ProfilPage> {
       ),
       child: Column(
         children: [
-
-          // ── Avatar ────────────────────────────────────────
           Container(
             width: 100,
             height: 100,

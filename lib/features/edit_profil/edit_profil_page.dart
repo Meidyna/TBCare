@@ -65,7 +65,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
         telepon: _teleponController.text.trim(),
       );
 
-      // ← Simpan path foto lokal jika ada foto baru
       if (_fotoBaru != null) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('foto_profil_${UserSession.email}', _fotoBaru!.path);
@@ -100,7 +99,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final topPadding = MediaQuery.of(context).padding.top;
-
     const double headerContentHeight = 200.0;
     final double headerTotal = topPadding + headerContentHeight;
     const double cardOverlap = 110.0;
@@ -188,7 +186,6 @@ class _EditProfilPageState extends State<EditProfilPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Center(child: _buildAvatar(width)),
             SizedBox(height: width * 0.06),
 

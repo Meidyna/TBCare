@@ -3,9 +3,6 @@ import '../../core/navigation/app_routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../repositories/edukasi_repository.dart';
 
-// ════════════════════════════════════════════════════════════════
-// MODEL
-// ════════════════════════════════════════════════════════════════
 class KontenEdukasiModel {
   final String id;
   final String judul;
@@ -36,9 +33,6 @@ class KontenEdukasiModel {
       );
 }
 
-// ════════════════════════════════════════════════════════════════
-// PAGE
-// ════════════════════════════════════════════════════════════════
 class KontenEdukasiPage extends StatefulWidget {
   const KontenEdukasiPage({super.key});
 
@@ -96,7 +90,7 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
   void _bukaDetail(KontenEdukasiModel konten) {
     Navigator.pushNamed(
       context,
-      konten.tipe.toLowerCase() == 'video'  // ← tambah .toLowerCase()
+      konten.tipe.toLowerCase() == 'video'
           ? AppRoutes.detailVideo
           : AppRoutes.detailArtikel,
       arguments: konten,
@@ -273,10 +267,9 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
     );
   }
 
-  /// Kartu konten — bisa ditekan → navigate ke detail
   Widget _buildKartuKonten(double width, KontenEdukasiModel konten) {
     return GestureDetector(
-      onTap: () => _bukaDetail(konten), // ← navigate ke detail
+      onTap: () => _bukaDetail(konten),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: EdgeInsets.all(width * 0.04),
@@ -295,7 +288,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
 
-            // Thumbnail / placeholder
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: konten.thumbnailUrl != null
@@ -338,7 +330,6 @@ class _KontenEdukasiPageState extends State<KontenEdukasiPage> {
               ),
             ),
 
-            // Ikon panah kanan
             Icon(Icons.chevron_right_rounded,
                 color: Colors.grey.shade400, size: 20),
           ],

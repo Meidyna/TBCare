@@ -86,12 +86,11 @@ class _SplashRouterState extends State<_SplashRouter> {
   }
 
   Future<void> _cekSession() async {
-    await Future.delayed(const Duration(seconds: 2)); // tampilkan splash dulu
+    await Future.delayed(const Duration(seconds: 2));
 
     final token = await UserSession.loadToken();
 
     if (token != null && token.isNotEmpty) {
-      // ← Token ada, set ke UserSession lalu load profil
       UserSession.simpan(
         nama: '',
         email: '',
@@ -102,7 +101,7 @@ class _SplashRouterState extends State<_SplashRouter> {
       try {
         await ProfilRepository.getProfile();
       } catch (e) {
-        // Token expired atau error → ke login
+
         await UserSession.hapusToken();
         if (mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.login);
@@ -114,7 +113,7 @@ class _SplashRouterState extends State<_SplashRouter> {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } else {
-      // Tidak ada token → ke login
+
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       }
@@ -123,7 +122,6 @@ class _SplashRouterState extends State<_SplashRouter> {
 
   @override
   Widget build(BuildContext context) {
-    // Tampilkan splash page selama cek session
     return const SplashPage();
   }
 }
