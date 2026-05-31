@@ -1,9 +1,54 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/api_constants.dart';
+import '../core/session/user_session.dart';
 import '../models/obat_model.dart';
 import '../services/api_services.dart';
 import '../services/notification_service.dart';
 
 class ObatRepository {
+  // ─── History Obat (per akun) ───────────────────────────────────────────────
+
+  static String _historyKey(String userId) => 'history_obat_$userId';
+
+  // Ambil userId dari SharedPreferences (disimpan saat login)
+  static Future<String> _getUserId() async {
+    final email = UserSession.email;
+    return email.isNotEmpty ? email : 'guest';
+  }
+
+  static Future<List<Map<String, String>>> getHistoryObat() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await _getUserId();
+    final raw = prefs.getString(_historyKey(userId));
+    if (raw == null) return [];
+    final List decoded = jsonDecode(raw);
+    return decoded.map((e) => Map<String, String>.from(e)).toList();
+  }
+
+  static Future<void> _simpanKeHistory(String namaObat, String dosis) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await _getUserId();
+    final history = await getHistoryObat();
+
+    // Cek apakah sudah ada (case-insensitive), kalau ada update dosisnya
+    final index = history.indexWhere(
+          (e) => e['nama']!.toLowerCase() == namaObat.toLowerCase(),
+    );
+
+    if (index >= 0) {
+      history[index] = {'nama': namaObat, 'dosis': dosis};
+    } else {
+      history.insert(0, {'nama': namaObat, 'dosis': dosis}); // terbaru di atas
+    }
+
+    // Maksimal simpan 20 history
+    final trimmed = history.take(20).toList();
+    await prefs.setString(_historyKey(userId), jsonEncode(trimmed));
+  }
+
+  // ─── Existing Methods ──────────────────────────────────────────────────────
+
   static Future<JadwalHariIniModel> getJadwalHariIni() async {
     final res = await ApiService.get(ApiConstants.getJadwal);
     return JadwalHariIniModel.fromJson(res['data']);
@@ -22,6 +67,9 @@ class ObatRepository {
 
     final obat = ObatModel.fromJson(res['data']);
 
+    // Simpan ke history lokal per akun
+    await _simpanKeHistory(namaObat, dosis);
+
     for (final waktu in waktuMinum) {
       await NotificationService.jadwalkanNotifikasiObat(
         obatId: obat.id,
@@ -29,7 +77,6 @@ class ObatRepository {
         dosis: dosis,
         waktuMinum: waktu,
       );
-
       await NotificationService.catatJadwalKeHistory(
         obatId: obat.id,
         namaObat: namaObat,
@@ -52,7 +99,6 @@ class ObatRepository {
       );
     } catch (e) {
       // Abaikan error pembatalan notifikasi
-      // Error ini dari Android saat format notifikasi tidak cocok
     }
   }
 

@@ -19,11 +19,57 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
   final _dosisController = TextEditingController();
   List<TimeOfDay> _waktuList = [const TimeOfDay(hour: 8, minute: 0)];
 
+  List<Map<String, String>> _historyObat = [];
+  List<Map<String, String>> _suggestions = [];
+  bool _showSuggestions = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+    _namaController.addListener(_onNamaChanged);
+  }
+
   @override
   void dispose() {
+    _namaController.removeListener(_onNamaChanged);
     _namaController.dispose();
     _dosisController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    final history = await ObatRepository.getHistoryObat();
+    if (mounted) setState(() => _historyObat = history);
+  }
+
+  void _onNamaChanged() {
+    final query = _namaController.text.toLowerCase().trim();
+    if (query.isEmpty) {
+      setState(() {
+        _suggestions = _historyObat;
+        _showSuggestions = _historyObat.isNotEmpty;
+      });
+      return;
+    }
+    final filtered = _historyObat
+        .where((e) => e['nama']!.toLowerCase().contains(query))
+        .toList();
+    setState(() {
+      _suggestions = filtered;
+      _showSuggestions = filtered.isNotEmpty;
+    });
+  }
+
+  void _pilihSuggestion(Map<String, String> item) {
+    setState(() {
+      _namaController.text = item['nama']!;
+      _dosisController.text = item['dosis']!;
+      _showSuggestions = false;
+      _namaController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _namaController.text.length),
+      );
+    });
   }
 
   String _formatWaktu(TimeOfDay t) =>
@@ -48,9 +94,8 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
     }
   }
 
-  void _tambahWaktu() {
-    setState(() => _waktuList.add(const TimeOfDay(hour: 12, minute: 0)));
-  }
+  void _tambahWaktu() =>
+      setState(() => _waktuList.add(const TimeOfDay(hour: 12, minute: 0)));
 
   void _hapusWaktu(int index) {
     if (_waktuList.length > 1) {
@@ -101,13 +146,178 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
 
               _label("Nama Obat"),
               const SizedBox(height: 6),
-              _textField(
-                controller: _namaController,
-                hint: "Contoh: Rifampisin",
-                capitalization: TextCapitalization.words,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Nama obat tidak boleh kosong'
-                    : null,
+
+              if (_historyObat.isNotEmpty) ...[
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: _historyObat.take(6).map((item) {
+                    return GestureDetector(
+                      onTap: () => _pilihSuggestion(item),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.buttonBackground.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppTheme.buttonBackground.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.history,
+                                size: 12,
+                                color: AppTheme.buttonBackground),
+                            const SizedBox(width: 4),
+                            Text(
+                              item['nama']!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.buttonBackground,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _namaController,
+                    textCapitalization: TextCapitalization.words,
+                    onTap: () {
+                      if (_historyObat.isNotEmpty) {
+                        setState(() {
+                          _suggestions = _historyObat;
+                          _showSuggestions = true;
+                        });
+                      }
+                    },
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Nama obat tidak boleh kosong'
+                        : null,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: "Contoh: Rifampisin",
+                      hintStyle: TextStyle(
+                          color: Colors.grey.shade400, fontSize: 14),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 13),
+                      suffixIcon: _namaController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(Icons.close,
+                            size: 16, color: Colors.grey.shade400),
+                        onPressed: () {
+                          _namaController.clear();
+                          _dosisController.clear();
+                        },
+                      )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                        BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                        BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: AppTheme.buttonBackground, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.red),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide:
+                        const BorderSide(color: Colors.red, width: 2),
+                      ),
+                    ),
+                  ),
+
+                  if (_showSuggestions && _suggestions.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      constraints: const BoxConstraints(maxHeight: 180),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade300),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shrinkWrap: true,
+                        itemCount: _suggestions.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: Colors.grey.shade100),
+                        itemBuilder: (_, i) {
+                          final item = _suggestions[i];
+                          return InkWell(
+                            onTap: () => _pilihSuggestion(item),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.medication_outlined,
+                                      size: 16,
+                                      color: AppTheme.buttonBackground),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['nama']!,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        Text(
+                                          item['dosis']!,
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade500),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.north_west,
+                                      size: 14,
+                                      color: Colors.grey.shade400),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
 
               const SizedBox(height: 16),
@@ -139,16 +349,19 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
                               horizontal: 12, vertical: 13),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            border: Border.all(color: Colors.grey.shade300),
+                            border:
+                            Border.all(color: Colors.grey.shade300),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             children: [
                               Icon(Icons.access_time_rounded,
-                                  size: 18, color: Colors.grey.shade500),
+                                  size: 18,
+                                  color: Colors.grey.shade500),
                               const SizedBox(width: 8),
                               Text(_formatWaktu(e.value),
-                                  style: const TextStyle(fontSize: 14)),
+                                  style:
+                                  const TextStyle(fontSize: 14)),
                               const Spacer(),
                               Icon(Icons.keyboard_arrow_down_rounded,
                                   color: Colors.grey.shade400),
@@ -191,7 +404,8 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
                   ),
                   child: const Text(
                     "Simpan",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -205,7 +419,9 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
   Widget _label(String teks) => Text(
     teks,
     style: const TextStyle(
-        fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.black87),
   );
 
   Widget _textField({
@@ -221,7 +437,8 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        hintStyle:
+        TextStyle(color: Colors.grey.shade400, fontSize: 14),
         filled: true,
         fillColor: Colors.white,
         contentPadding:
@@ -236,8 +453,8 @@ class _TambahObatDialogState extends State<_TambahObatDialog> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide:
-          const BorderSide(color: AppTheme.buttonBackground, width: 2),
+          borderSide: const BorderSide(
+              color: AppTheme.buttonBackground, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -288,7 +505,7 @@ class _JadwalPageState extends State<JadwalPage> {
       (_jadwal?.semuaObat ?? []).where((o) => o.sudahMinum).toList();
   int get _totalObat => _jadwal?.totalObat ?? 0;
   int get _obatDiminum => _jadwal?.sudahMinum ?? 0;
-  double get _progress => _totalObat == 0 ? 0 : _obatDiminum / _totalObat;
+  double get _progress => _totalObat == 0 ? 0 : (_obatDiminum / _totalObat).clamp(0.0, 1.0);
 
   String get _tanggalHariIni {
     final now = DateTime.now();
@@ -546,7 +763,7 @@ class _JadwalPageState extends State<JadwalPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "$_obatDiminum / $_totalObat",
+                "${_obatDiminum.clamp(0, _totalObat)} / $_totalObat",
                 style: TextStyle(
                     fontSize: width * 0.055, fontWeight: FontWeight.bold),
               ),

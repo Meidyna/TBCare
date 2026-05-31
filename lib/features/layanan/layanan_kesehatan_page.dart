@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/navigation/app_routes.dart';
@@ -12,16 +13,19 @@ class LayananKesehatanPage extends StatefulWidget {
 }
 
 class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
-
   List<LayananKesehatanModel> _semuaLayanan = [];
-  List<LayananKesehatanModel> _layananTerfilter = [];
+  List<LayananKesehatanModel> _layananTampil = [];
 
   bool _isLoading = false;
   bool _isLoadingMore = false;
+  bool _isLoadingSearch = false;
   bool _hasMoreData = true;
   int _currentPage = 1;
 
   final _searchController = TextEditingController();
+  Timer? _debounceTimer;
+
+  static const int _perPage = 20;
 
   @override
   void initState() {
@@ -32,6 +36,7 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -41,35 +46,31 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
     if (loadMore) {
       setState(() => _isLoadingMore = true);
     } else {
-      setState(() => _isLoading = true);
-      _currentPage = 1;
+      setState(() {
+        _isLoading = true;
+        _currentPage = 1;
+      });
     }
 
     try {
       final data = await LayananRepository.getLayanan(page: _currentPage);
       setState(() {
         if (loadMore) {
-          _semuaLayanan.addAll(data);
+          _layananTampil.addAll(data);
         } else {
-          _semuaLayanan = data;
+          _layananTampil = data;
         }
-        _layananTerfilter = _semuaLayanan;
-        _hasMoreData = data.length >= 20;
+        _hasMoreData = data.length >= _perPage;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError(e.toString());
     } finally {
-      setState(() {
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -79,19 +80,57 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase().trim();
-    setState(() {
-      if (query.isEmpty) {
-        _layananTerfilter = _semuaLayanan;
-      } else {
-        _layananTerfilter = _semuaLayanan
-            .where((l) =>
-        l.nama.toLowerCase().contains(query) ||
-            l.tipe.toLowerCase().contains(query) ||
-            l.alamat.toLowerCase().contains(query))
-            .toList();
-      }
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) _handleSearch();
     });
+  }
+
+  Future<void> _handleSearch() async {
+    final query = _searchController.text.toLowerCase().trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _layananTampil = _semuaLayanan.isEmpty
+            ? _layananTampil
+            : _semuaLayanan.take(_perPage).toList();
+        _hasMoreData = true;
+        _currentPage = 1;
+      });
+
+      if (_semuaLayanan.isEmpty) await _loadLayanan();
+      return;
+    }
+
+    if (_semuaLayanan.isEmpty) {
+      setState(() => _isLoadingSearch = true);
+      try {
+        _semuaLayanan = await LayananRepository.getAllLayanan();
+      } catch (e) {
+        _showError(e.toString());
+        setState(() => _isLoadingSearch = false);
+        return;
+      }
+      setState(() => _isLoadingSearch = false);
+    }
+
+    setState(() {
+      _layananTampil = _semuaLayanan
+          .where((l) =>
+      l.nama.toLowerCase().contains(query) ||
+          l.tipe.toLowerCase().contains(query) ||
+          l.alamat.toLowerCase().contains(query))
+          .toList();
+      _hasMoreData = false;
+    });
+  }
+
+  void _showError(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -120,33 +159,41 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
             left: 0, right: 0, bottom: 0,
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
+                : _isLoadingSearch
+                ? _buildLoadingSearch()
                 : ListView(
               padding: EdgeInsets.fromLTRB(
                   width * 0.05, listPaddingTop, width * 0.05, 0),
               children: [
-                if (_layananTerfilter.isEmpty)
+                if (_layananTampil.isEmpty)
                   _buildEmpty()
                 else
-                  ..._layananTerfilter
+                  ..._layananTampil
                       .map((l) => _buildKartuLayanan(width, l)),
 
-                if (_hasMoreData && _searchController.text.isEmpty)
+                if (_hasMoreData &&
+                    _searchController.text.trim().isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding:
+                    const EdgeInsets.symmetric(vertical: 12),
                     child: _isLoadingMore
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(
+                        child: CircularProgressIndicator())
                         : SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: _loadMore,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.buttonBackground,
+                          foregroundColor:
+                          AppTheme.buttonBackground,
                           side: const BorderSide(
-                              color: AppTheme.buttonBackground),
+                              color:
+                              AppTheme.buttonBackground),
                           padding: const EdgeInsets.symmetric(
                               vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius:
+                            BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
@@ -168,6 +215,22 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
             left: width * 0.05,
             right: width * 0.05,
             child: _buildSearchBar(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingSearch() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 12),
+          Text(
+            'Memuat semua data untuk pencarian...',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
           ),
         ],
       ),
@@ -302,7 +365,6 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Container(
             width: 44,
             height: 44,
@@ -316,9 +378,7 @@ class _LayananKesehatanPageState extends State<LayananKesehatanPage> {
               size: 22,
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
